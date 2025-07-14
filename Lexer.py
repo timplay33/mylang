@@ -5,6 +5,8 @@ def tokenize(code):
     token_specification = [
         ('NUMBER',   r'\d+(\.\d+)?'), # Integer or decimal
         ('ID',       r'[a-zA-Z_]\w*'),
+        ('COMMA',    r','),
+        ('STRING',   r'"[^"]*"'),
         ('ASSIGN',   r'='),
         ('ADD',      r'\+'),
         ('SUB',      r'-'),
@@ -22,6 +24,8 @@ def tokenize(code):
         if kind == 'NUMBER':
             num = float(value) if '.' in value else int(value)
             tokens.append(('NUMBER', num))
+        elif kind == 'STRING':
+            tokens.append(('STRING', value[1:-1]))
         elif kind == 'SKIP':
             continue
         else:

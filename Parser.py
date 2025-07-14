@@ -52,11 +52,25 @@ class Parser:
         if self.peek() == 'NUMBER':
             return self.match('NUMBER')
         elif self.peek() == 'ID':
-            return ('var', self.match('ID'))
+            name = self.match('ID')
+            if self.peek() == 'LPAREN':
+                self.match('LPAREN')
+                args = []
+                if self.peek != 'RPAREN':
+                    args.append(self.expr())
+                    while self.peek() == 'COMMA':
+                        self.match('COMMA')
+                        args.append(self.expr())
+                self.match('RPAREN')
+                return ('call', name, args)
+            else:
+                return ('var', name)
         elif self.peek() == 'LPAREN':
             self.match('LPAREN')
             node = self.expr()
             self.match('RPAREN')
             return node
+        elif self.peek() == 'STRING':
+            return self.match('STRING') 
         else:
             raise SyntaxError(f"Unexpected token: {self.tokens[self.pos]}")
