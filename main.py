@@ -5,21 +5,27 @@ import Parser
 import Evaluator
 
 
-def run(code):
+def run(code, env):
     tokens = Lexer.tokenize(code)
+    print(tokens)
     parser = Parser.Parser(tokens)
     ast = parser.parse()
-    return Evaluator.evaluate(ast)
+    print(ast)
+    result = env.evaluate(ast)
+    print(result)
+    return result
 
 def console_mode():
+    env = Evaluator.Environment()
     while True:
         code = input("> ")
         if code.strip().lower() == 'exit':
             break
         if code.strip():
-            print(run(code))
+            print(run(code, env))
 
 def file_mode():
+    env = Evaluator.Environment()
     filepath = sys.argv[1]
     try:
         with open(filepath, 'r') as file:
@@ -27,7 +33,7 @@ def file_mode():
         if not code.strip():
             print("File is empty.")
             sys.exit(1)
-        print(run(code))
+        print(run(code, env))
     except FileNotFoundError:
         print(f"File not found: {filepath}")
         sys.exit(1)

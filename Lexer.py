@@ -4,6 +4,8 @@ import re
 def tokenize(code):
     token_specification = [
         ('NUMBER',   r'\d+(\.\d+)?'), # Integer or decimal
+	('ID',       r'[a-zA-Z_]\w*'),
+	('ASSIGN',   r'='),
         ('ADD',      r'\+'),
         ('SUB',      r'-'),
         ('MUL',      r'\*'),

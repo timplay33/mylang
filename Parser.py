@@ -17,7 +17,13 @@ class Parser:
         return None
 
     def parse(self):
-        return self.expr()
+        if self.peek() == 'ID' and self.tokens[self.pos + 1][0] == 'ASSIGN':
+            name = self.match('ID')
+            self.match('ASSIGN')
+            expr = self.expr()
+            return ('assign', name, expr)
+        else:
+            return self.expr()
 
     # expr -> term ((+|-) term)*
     def expr(self):
@@ -41,6 +47,8 @@ class Parser:
     def factor(self):
         if self.peek() == 'NUMBER':
             return self.match('NUMBER')
+        elif self.peek() == 'ID':
+            return ('var', self.match('ID'))
         elif self.peek() == 'LPAREN':
             self.match('LPAREN')
             node = self.expr()

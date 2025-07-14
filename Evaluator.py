@@ -1,9 +1,25 @@
-def evaluate(node):
-    if isinstance(node, float):
-        return node
-    op, left, right = node
-    if op == '+': return evaluate(left) + evaluate(right)
-    if op == '-': return evaluate(left) - evaluate(right)
-    if op == '*': return evaluate(left) * evaluate(right)
-    if op == '/': return evaluate(left) / evaluate(right)
-    return None
+class Environment:
+
+    def __init__(self):
+        self.vars = {}
+
+    def evaluate(self, node):
+        if isinstance(node, float):
+            return node
+        if isinstance(node, tuple):
+            op = node[0]
+            if op == '+': return self.evaluate(node[1]) + self.evaluate(node[2])
+            elif op == '-': return self.evaluate(node[1]) - self.evaluate(node[1])
+            elif op == '*': return self.evaluate(node[1]) * self.evaluate(node[1])
+            elif op == '/': return self.evaluate(node[1]) / self.evaluate(node[1])
+            elif op == 'assign': 
+                name = node[1]
+                value = self.evaluate(node[2])
+                self.vars[name] = value
+                return value
+            elif op == 'var': 	
+                name = node[1]
+                if name not in self.vars:
+                    raise NameError(f"Undefined variable: {name}")
+                return self.vars[name]
+        raise TypeError(f"Invalid AST node: {node}")
