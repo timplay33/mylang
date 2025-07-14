@@ -48,7 +48,7 @@ class Parser:
         if self.peek() == 'FUNC':
             self.match('FUNC')
             name = self.match('ID')
-            self.match('LPRAEN')
+            self.match('LPAREN')
             params = []
             if self.peek() != 'RPAREN':
                 params.append(self.match('ID'))
