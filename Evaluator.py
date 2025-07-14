@@ -1,10 +1,15 @@
 class Environment:
-
     def __init__(self):
         self.vars = {}
         self.funcs = {}
 
     def evaluate(self, node):
+        if isinstance(node, list):  # Add support for lists of statements
+            result = None
+            for statement in node:
+                result = self.evaluate(statement)
+            return result
+            
         if isinstance(node, (int, float, str)):
             return node
         if isinstance(node, tuple):
@@ -40,7 +45,6 @@ class Environment:
                     local.vars = self.vars.copy()
                     for param, arg_val in zip(func_params, args):
                         local.vars[param] = arg_val
-                    print(local.vars, local.funcs)
                     return local.evaluate(func_body)
                 else:
                     raise NameError(f"Unknown function: {func_name}")
@@ -50,5 +54,9 @@ class Environment:
                 body = node[3]
                 self.funcs[name] = (params, body)
                 return f"<function {name}>"
+
+            elif op == 'return':
+                value = self.evaluate(node[1])
+                return value
 
         raise TypeError(f"Invalid AST node: {node}")

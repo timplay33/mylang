@@ -17,13 +17,20 @@ class Parser:
         return None
 
     def parse(self):
-        if self.peek() == 'ID' and self.tokens[self.pos + 1][0] == 'ASSIGN':
-            name = self.match('ID')
-            self.match('ASSIGN')
-            expr = self.expr()
-            return ('assign', name, expr)
-        else:
-            return self.expr()
+        statements = []
+        while self.pos < len(self.tokens) and self.peek() != 'EOF':
+            if self.peek() == 'ID' and self.tokens[self.pos + 1][0] == 'ASSIGN':
+                name = self.match('ID')
+                self.match('ASSIGN')
+                expr = self.expr()
+                self.match('SEMI')
+                statements.append(('assign', name, expr))
+            else:
+                expr = self.expr()
+                if self.peek() == 'SEMI':
+                    self.match('SEMI')
+                statements.append(expr)
+        return statements
 
     # expr -> term ((+|-) term)*
     def expr(self):
@@ -56,10 +63,19 @@ class Parser:
                     self.match('COMMA')
                     params.append(self.match('ID'))
             self.match('RPAREN')
-            self.match('ASSIGN')
-            body = self.expr()
-            print(name, params, body)
-            return ('func', name, params, body) 
+            self.match('LBRACE')
+            body = []
+            while self.peek() != 'RBRACE':
+                expr = self.expr()
+                if expr is not None:
+                    body.append(expr)
+            self.match('RBRACE')
+            return ('func', name, params, body)
+        elif self.peek() == 'RETURN':
+            self.match('RETURN')
+            expr = self.expr()
+            self.match('SEMI')
+            return ('return', expr)
         elif self.peek() == 'SUB':
             self.match('SUB')
             node = self.factor()
@@ -71,12 +87,13 @@ class Parser:
             if self.peek() == 'LPAREN':
                 self.match('LPAREN')
                 args = []
-                if self.peek != 'RPAREN':
+                if self.peek() != 'RPAREN':
                     args.append(self.expr())
                     while self.peek() == 'COMMA':
                         self.match('COMMA')
                         args.append(self.expr())
                 self.match('RPAREN')
+                self.match('SEMI')
                 return ('call', name, args)
             else:
                 return ('var', name)

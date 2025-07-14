@@ -7,12 +7,12 @@ import Evaluator
 
 def run(code, env):
     tokens = Lexer.tokenize(code)
-    print(tokens)
+    #print(tokens)
     parser = Parser.Parser(tokens)
     ast = parser.parse()
-    print(ast)
+    #print(ast)
     result = env.evaluate(ast)
-    print(result)
+    #print(result)
     return result
 
 def console_mode():
@@ -30,12 +30,7 @@ def file_mode():
     try:
         with open(filepath, 'r') as file:
             code = file.read()
-        for line in code.splitlines():
-            if line.strip():
-                try:
-                    run(line, env)
-                except Exception as e:
-                    print(f"Error on line: {line}\n{e}")
+            run(code, env)
     except FileNotFoundError:
         print(f"File not found: {filepath}")
         sys.exit(1)

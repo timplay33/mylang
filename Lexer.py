@@ -4,9 +4,9 @@ import re
 def tokenize(code):
     token_specification = [
         ('FUNC',     r'func'),
+        ('RETURN',   r'return'),
         ('NUMBER',   r'\d+(\.\d+)?'), # Integer or decimal
         ('ID',       r'[a-zA-Z_]\w*'),
-        ('COMMA',    r','),
         ('STRING',   r'"[^"]*"'),
         ('ASSIGN',   r'='),
         ('ADD',      r'\+'),
@@ -15,6 +15,10 @@ def tokenize(code):
         ('DIV',      r'/'),
         ('LPAREN',   r'\('),
         ('RPAREN',   r'\)'),
+        ('LBRACE', r'\{'),
+        ('RBRACE', r'\}'),
+        ('COMMA',  r','),
+        ('SEMI',   r';'),
         ('SKIP',     r'[ \t]+'),       # Skip spaces
     ]
     tok_regex = '|'.join(f'(?P<{name}>{regex})' for name, regex in token_specification)
