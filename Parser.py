@@ -45,6 +45,10 @@ class Parser:
 
     # factor -> NUMBER | (expr)
     def factor(self):
+        if self.peek() == 'SUB':
+            self.match('SUB')
+            node = self.factor()
+            return ('neg', node)
         if self.peek() == 'NUMBER':
             return self.match('NUMBER')
         elif self.peek() == 'ID':

@@ -4,8 +4,8 @@ import re
 def tokenize(code):
     token_specification = [
         ('NUMBER',   r'\d+(\.\d+)?'), # Integer or decimal
-	('ID',       r'[a-zA-Z_]\w*'),
-	('ASSIGN',   r'='),
+        ('ID',       r'[a-zA-Z_]\w*'),
+        ('ASSIGN',   r'='),
         ('ADD',      r'\+'),
         ('SUB',      r'-'),
         ('MUL',      r'\*'),
@@ -20,7 +20,8 @@ def tokenize(code):
         kind = mo.lastgroup
         value = mo.group()
         if kind == 'NUMBER':
-            tokens.append(('NUMBER', float(value)))
+            num = float(value) if '.' in value else int(value)
+            tokens.append(('NUMBER', num))
         elif kind == 'SKIP':
             continue
         else:

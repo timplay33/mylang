@@ -4,14 +4,15 @@ class Environment:
         self.vars = {}
 
     def evaluate(self, node):
-        if isinstance(node, float):
+        if isinstance(node, (int, float)):
             return node
         if isinstance(node, tuple):
             op = node[0]
             if op == '+': return self.evaluate(node[1]) + self.evaluate(node[2])
-            elif op == '-': return self.evaluate(node[1]) - self.evaluate(node[1])
-            elif op == '*': return self.evaluate(node[1]) * self.evaluate(node[1])
-            elif op == '/': return self.evaluate(node[1]) / self.evaluate(node[1])
+            elif op == '-': return self.evaluate(node[1]) - self.evaluate(node[2])
+            elif op == '*': return self.evaluate(node[1]) * self.evaluate(node[2])
+            elif op == '/': return self.evaluate(node[1]) / self.evaluate(node[2])
+            elif op == 'neg': return -self.evaluate(node[1])
             elif op == 'assign': 
                 name = node[1]
                 value = self.evaluate(node[2])
