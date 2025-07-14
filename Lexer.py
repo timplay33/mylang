@@ -3,6 +3,7 @@ import re
 # === Lexer ===
 def tokenize(code):
     token_specification = [
+        ('FUNC',     r'func'),
         ('NUMBER',   r'\d+(\.\d+)?'), # Integer or decimal
         ('ID',       r'[a-zA-Z_]\w*'),
         ('COMMA',    r','),

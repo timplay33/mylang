@@ -45,11 +45,26 @@ class Parser:
 
     # factor -> NUMBER | (expr)
     def factor(self):
-        if self.peek() == 'SUB':
+        if self.peek() == 'FUNC':
+            self.match('FUNC')
+            name = self.match('ID')
+            self.match('LPRAEN')
+            params = []
+            if self.peek() != 'RPAREN':
+                params.append(self.match('ID'))
+                while self.peek() == 'COMMA':
+                    self.match('COMMA')
+                    params.append(self.match('ID'))
+            self.match('RPAREN')
+            self.match('ASSIGN')
+            body = self.expr()
+            print(name, params, body)
+            return ('func', name, params, body) 
+        elif self.peek() == 'SUB':
             self.match('SUB')
             node = self.factor()
             return ('neg', node)
-        if self.peek() == 'NUMBER':
+        elif self.peek() == 'NUMBER':
             return self.match('NUMBER')
         elif self.peek() == 'ID':
             name = self.match('ID')

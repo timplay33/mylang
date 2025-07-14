@@ -2,3 +2,6 @@ x= 14-4
 z= 7
 y= x*z -6
 print("hallo", y)
+
+func run(a) = print(a)
+run("test")

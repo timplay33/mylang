@@ -12,7 +12,7 @@ def run(code, env):
     ast = parser.parse()
     print(ast)
     result = env.evaluate(ast)
-    #print(result)
+    print(result)
     return result
 
 def console_mode():
@@ -22,7 +22,7 @@ def console_mode():
         if code.strip().lower() == 'exit':
             break
         if code.strip():
-            print(run(code, env))
+            run(code, env)
 
 def file_mode():
     env = Evaluator.Environment()
@@ -33,8 +33,7 @@ def file_mode():
         for line in code.splitlines():
             if line.strip():
                 try:
-                    result = run(line, env)
-                    print(f">>> {line}\n{result}")
+                    run(line, env)
                 except Exception as e:
                     print(f"Error on line: {line}\n{e}")
     except FileNotFoundError:
