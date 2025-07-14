@@ -12,7 +12,7 @@ def run(code, env):
     ast = parser.parse()
     print(ast)
     result = env.evaluate(ast)
-    print(result)
+    #print(result)
     return result
 
 def console_mode():
@@ -30,10 +30,13 @@ def file_mode():
     try:
         with open(filepath, 'r') as file:
             code = file.read()
-        if not code.strip():
-            print("File is empty.")
-            sys.exit(1)
-        print(run(code, env))
+        for line in code.splitlines():
+            if line.strip():
+                try:
+                    result = run(line, env)
+                    print(f">>> {line}\n{result}")
+                except Exception as e:
+                    print(f"Error on line: {line}\n{e}")
     except FileNotFoundError:
         print(f"File not found: {filepath}")
         sys.exit(1)
