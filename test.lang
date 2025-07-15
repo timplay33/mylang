@@ -1,12 +1,8 @@
-func run(a) {
-    return a + " is running";
+x = 7;
+func main() {
+    x = 5;
+    x = 2;
+    print(x);
 }
 
-print(run("test"));
-print(run("test2"));
-
-func printer(a) {
-    print("printer is called with: " + a);
-}
-
-printer("This is a test print.");
+main();

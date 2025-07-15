@@ -19,17 +19,10 @@ class Parser:
     def parse(self):
         statements = []
         while self.pos < len(self.tokens) and self.peek() != 'EOF':
-            if self.peek() == 'ID' and self.tokens[self.pos + 1][0] == 'ASSIGN':
-                name = self.match('ID')
-                self.match('ASSIGN')
-                expr = self.expr()
+            expr = self.expr()
+            if self.peek() == 'SEMI':
                 self.match('SEMI')
-                statements.append(('assign', name, expr))
-            else:
-                expr = self.expr()
-                if self.peek() == 'SEMI':
-                    self.match('SEMI')
-                statements.append(expr)
+            statements.append(expr)
         return statements
 
     # expr -> term ((+|-) term)*
@@ -95,6 +88,11 @@ class Parser:
                 self.match('RPAREN')
                 self.match('SEMI')
                 return ('call', name, args)
+            elif self.peek() == 'ASSIGN':
+                self.match('ASSIGN')
+                expr = self.expr()
+                self.match('SEMI')
+                return ('assign', name, expr)
             else:
                 return ('var', name)
         elif self.peek() == 'LPAREN':
@@ -105,4 +103,6 @@ class Parser:
         elif self.peek() == 'STRING':
             return self.match('STRING') 
         else:
-            raise SyntaxError(f"Unexpected token: {self.tokens[self.pos]}")
+            print(f"Unexpected token: {self.tokens[self.pos]}")
+            self.advance()
+            #raise SyntaxError(f"Unexpected token: {self.tokens[self.pos]}")
