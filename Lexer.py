@@ -26,14 +26,15 @@ def tokenize(code):
     for mo in re.finditer(tok_regex, code):
         kind = mo.lastgroup
         value = mo.group()
-        if kind == 'NUMBER':
-            num = float(value) if '.' in value else int(value)
-            tokens.append(('NUMBER', num))
-        elif kind == 'STRING':
-            tokens.append(('STRING', value[1:-1]))
-        elif kind == 'SKIP':
-            continue
-        else:
-            tokens.append((kind, value))
+        match kind:
+            case 'NUMBER':
+                num = float(value) if '.' in value else int(value)
+                tokens.append(('NUMBER', num))
+            case 'STRING':
+                tokens.append(('STRING', value[1:-1]))
+            case 'SKIP':
+                continue
+            case _:
+                tokens.append((kind, value))
     tokens.append(('EOF', None))
     return tokens
