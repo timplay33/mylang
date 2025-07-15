@@ -124,5 +124,16 @@ class Parser:
                     self.match('RBRACE')
                     return ('if', condition, body, else_body)
                 return ('if', condition, body)
+            case 'WHILE':
+                self.match('WHILE')
+                self.match('LPAREN')
+                condition = self.expr()
+                self.match('RPAREN')
+                self.match('LBRACE')
+                body = []
+                while self.peek() != 'RBRACE':
+                    body.append(self.expr())
+                self.match('RBRACE')
+                return ('while', condition, body)
             case _:
                 raise SyntaxError(f"Unexpected token: {self.tokens[self.pos]}")

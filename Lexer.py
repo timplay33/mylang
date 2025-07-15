@@ -7,6 +7,7 @@ def tokenize(code):
         ('RETURN',   r'return'),
         ('IF',       r'if'),
         ('ELSE',     r'else'),
+        ('WHILE',    r'while'),
         ('NUMBER',   r'\d+(\.\d+)?'), # Integer or decimal
         ('ID',       r'[a-zA-Z_]\w*'),
         ('STRING',   r'"[^"]*"'),

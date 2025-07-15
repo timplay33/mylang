@@ -61,19 +61,28 @@ class Environment:
                 case 'if':
                     condition = self.evaluate(node[1])
                     if condition:
-                        local_env = Environment()
-                        local_env.vars = self.vars.copy()
                         result = None
+                        local_env = Environment()
+                        local_env.vars = self.vars
                         for stmt in node[2]:
                             result = local_env.evaluate(stmt)
                         return result
                     elif len(node) > 3:  # Check for else clause
-                        local_env = Environment()
-                        local_env.vars = self.vars.copy()
                         result = None
+                        local_env = Environment()
+                        local_env.vars = self.vars
                         for stmt in node[3]:
                             result = local_env.evaluate(stmt)
                         return result
+                    return None
+                case 'while':
+                    condition = node[1]
+                    body = node[2]
+                    while self.evaluate(condition):
+                        local_env = Environment()
+                        local_env.vars = self.vars
+                        for stmt in body:
+                            local_env.evaluate(stmt)
                     return None
 
         raise TypeError(f"Invalid AST node: {node}")
