@@ -15,7 +15,7 @@ def run(code, env):
         ast = parser.parse()
         env.evaluate(ast)
     except Exception as e:
-        print('\x1b[0;30;41m' + f" {type(e).__name__}: {e} " + '\x1b[0m')
+        print('\033[101m\33[30m' + f" {type(e).__name__}: {e} " + '\033[0m')
         if tokens:
             print('\033[91m'+ f"Tokens: {"[\n" + ",\n".join(f"    {repr(t)}" for t in tokens) + "\n]"}" +'\033[0m')
         if ast:
