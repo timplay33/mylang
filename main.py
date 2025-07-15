@@ -17,7 +17,7 @@ def run(code, env):
     except Exception as e:
         print('\033[101m\33[30m' + f" {type(e).__name__}: {e} " + '\033[0m')
         if tokens:
-            print('\033[91m'+ f"Tokens: {"[\n" + ",\n".join(f"    {repr(t)}" for t in tokens) + "\n]"}" +'\033[0m')
+            print('\033[91m'+ f"Tokens: {"[\n" + ",\n".join(f"{i}:    {repr(t)}" for i, t in enumerate(tokens)) + "\n]"}" +'\033[0m')
         if ast:
             print('\033[91m'+ f"AST: {"[\n" + ",\n".join(f"    {repr(a)}" for a in ast) + "\n]"}"+ '\033[0m')
         sys.exit(1)
