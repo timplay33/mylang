@@ -10,13 +10,12 @@ class Parser:
         self.pos += 1
 
     def match(self, expected):
-        peek = self.peek()
-        if peek == expected:
+        if self.peek() == expected:
             val = self.tokens[self.pos][1]
             self.advance()
             return val
-        print(f'exprected: {expected} but got: {peek}')
-        return None
+        token = self.tokens[self.pos] if self.pos < len(self.tokens) else ('EOF', '')
+        raise SyntaxError(f'expected: {expected} but got: {token[0]} ({token[1]!r}) at position {self.pos}')
 
     def parse(self):
         statements = []
