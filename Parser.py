@@ -104,7 +104,26 @@ class Parser:
                 self.match('RPAREN')
                 return node
             case 'STRING':
-                return self.match('STRING') 
+                return self.match('STRING')
+            case 'IF':
+                self.match('IF')
+                self.match('LPAREN')
+                condition = self.expr()
+                self.match('RPAREN')
+                self.match('LBRACE')
+                body = []
+                while self.peek() != 'RBRACE':
+                    body.append(self.expr())
+                self.match('RBRACE')
+                if self.peek() == 'ELSE':
+                    self.match('ELSE')
+                    self.match('LBRACE')
+                    else_body = []
+                    while self.peek() != 'RBRACE':
+                        else_body.append(self.expr())
+                    self.match('RBRACE')
+                    return ('if', condition, body, else_body)
+                return ('if', condition, body)
             case _:
                 print(f"Unexpected token: {self.tokens[self.pos]}")
                 self.advance()

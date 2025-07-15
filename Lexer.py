@@ -5,6 +5,8 @@ def tokenize(code):
     token_specification = [
         ('FUNC',     r'func'),
         ('RETURN',   r'return'),
+        ('IF',       r'if'),
+        ('ELSE',     r'else'),
         ('NUMBER',   r'\d+(\.\d+)?'), # Integer or decimal
         ('ID',       r'[a-zA-Z_]\w*'),
         ('STRING',   r'"[^"]*"'),
