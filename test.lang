@@ -1,18 +1,6 @@
-x = 1;
+int x;
+x = 5;
+int y = 10;
 
-if (x) {
-    print("x is true");
-} else {
-    print("x is false");
-}
-
-if (x) {
-    print(x);
-}
-
-func main() {
-    x = 5;
-    print(x);
-}
-
-main();
+print(x / y);
+u = 2;

@@ -20,6 +20,8 @@ def run(code, env):
             print('\033[91m'+ f"Tokens: {"[\n" + ",\n".join(f"{i}:    {repr(t)}" for i, t in enumerate(tokens)) + "\n]"}" +'\033[0m')
         if ast:
             print('\033[91m'+ f"AST: {"[\n" + ",\n".join(f"    {repr(a)}" for a in ast) + "\n]"}"+ '\033[0m')
+        if len(env.vars) > 0: print('\033[93m'+ f"Global Variables: {env.vars}" + '\033[0m')
+        if len(env.funcs) > 0:print('\033[93m'+ f"Global Functions: {env.funcs}" + '\033[0m')
         sys.exit(1)
 
 def console_mode():

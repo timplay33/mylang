@@ -10,7 +10,7 @@ class Environment:
                 result = self.evaluate(statement)
             return result
             
-        if isinstance(node, (int, float, str)):
+        if isinstance(node, (int, float, str, bool, type(None))):
             return node
         if isinstance(node, tuple):
             match node[0]:
@@ -19,16 +19,33 @@ class Environment:
                 case '*': return self.evaluate(node[1]) * self.evaluate(node[2])
                 case '/': return self.evaluate(node[1]) / self.evaluate(node[2])
                 case 'neg': return -self.evaluate(node[1])
+                case 'decl':
+                    _, type_str, name, expr = node
+                    value = self.evaluate(expr)
+                    if name in self.vars:
+                        raise NameError(f"Variable '{name}' already declared")
+                    if type_str == 'int' and not isinstance(value, (int, type(None))):
+                        raise RuntimeError(f"Expected int, got {type(value).__name__}")
+                    if type_str == 'float' and not isinstance(value, (float, int, type(None))):
+                        raise RuntimeError(f"Expected float, got {type(value).__name__}")
+                    if type_str == 'string' and not isinstance(value, (str, type(None))):
+                        raise RuntimeError(f"Expected string, got {type(value).__name__}")
+                    if type_str == 'bool' and not isinstance(value, (bool, type(None))):
+                        raise RuntimeError(f"Expected bool, got {type(value).__name__}")
+                    self.vars[name] = (value, type_str)
+                    return value
                 case 'assign': 
                     name = node[1]
-                    value = self.evaluate(node[2])
-                    self.vars[name] = value
+                    if name not in self.vars:
+                        raise NameError(f"Undefined variable: {name}")
+                    value = self.formatVar(self.vars[name][1], self.evaluate(node[2]))
+                    self.vars[name] = (value, self.vars[name][1])
                     return value
                 case 'var': 	
                     name = node[1]
                     if name not in self.vars:
                         raise NameError(f"Undefined variable: {name}")
-                    return self.vars[name]
+                    return self.formatVar(self.vars[name][1],self.vars[name][0])
                 case 'call':
                     func_name = node[1]
                     args = [self.evaluate(arg) for arg in node[2]]
@@ -44,7 +61,7 @@ class Environment:
                         local.funcs = self.funcs
                         local.vars = self.vars.copy()
                         for param, arg_val in zip(func_params, args):
-                            local.vars[param] = arg_val
+                            local.vars[param[1]] = (arg_val, param[0])
                         return local.evaluate(func_body)
                     else:
                         raise NameError(f"Unknown function: {func_name}")
@@ -86,3 +103,15 @@ class Environment:
                     return None
 
         raise TypeError(f"Invalid AST node: {node}")
+
+    def formatVar(self, type, value):
+        if type == 'int':
+            return int(value) if value is not None else None
+        elif type == 'float':
+            return float(value) if value is not None else None
+        elif type == 'string':
+            return str(value) if value is not None else None
+        elif type == 'bool':
+            return bool(value) if value is not None else None
+        else:
+            raise TypeError(f"Unknown type: {type}")

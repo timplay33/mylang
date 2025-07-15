@@ -8,6 +8,11 @@ def tokenize(code):
         ('IF',       r'if'),
         ('ELSE',     r'else'),
         ('WHILE',    r'while'),
+        ('BOOL',     r'true|false'),
+        ('TYPE_INT', r'int'),
+        ('TYPE_FLOAT', r'float'),
+        ('TYPE_STRING', r'string'),
+        ('TYPE_BOOL', r'bool'),
         ('NUMBER',   r'\d+(\.\d+)?'), # Integer or decimal
         ('ID',       r'[a-zA-Z_]\w*'),
         ('STRING',   r'"[^"]*"'),
@@ -35,6 +40,8 @@ def tokenize(code):
                 tokens.append(('NUMBER', num))
             case 'STRING':
                 tokens.append(('STRING', value[1:-1]))
+            case 'BOOL':
+                tokens.append(('BOOL', value == 'true'))
             case 'SKIP':
                 continue
             case _:

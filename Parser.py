@@ -53,10 +53,10 @@ class Parser:
                 self.match('LPAREN')
                 params = []
                 if self.peek() != 'RPAREN':
-                    params.append(self.match('ID'))
+                    params.append((self.match(self.peek()), self.match('ID')))
                     while self.peek() == 'COMMA':
                         self.match('COMMA')
-                        params.append(self.match('ID'))
+                        params.append((self.match(self.peek()), self.match('ID')))
                 self.match('RPAREN')
                 self.match('LBRACE')
                 body = []
@@ -77,6 +77,10 @@ class Parser:
                 return ('neg', node)
             case 'NUMBER':
                 return self.match('NUMBER')
+            case 'BOOL':
+                return self.match('BOOL')
+            case 'TYPE_INT' | 'TYPE_FLOAT' | 'TYPE_STRING' | 'TYPE_BOOL':
+                return self.variable_declaration()
             case 'ID':
                 name = self.match('ID')
                 match self.peek():
@@ -137,3 +141,12 @@ class Parser:
                 return ('while', condition, body)
             case _:
                 raise SyntaxError(f"Unexpected token: {self.tokens[self.pos]}")
+    def variable_declaration(self):
+        type_token = self.match(self.peek())
+        name = self.match('ID')
+        expr = None
+        if self.peek() == 'ASSIGN':
+            self.match('ASSIGN')
+            expr = self.expr()
+        self.match('SEMI')
+        return ('decl', type_token, name, expr)
