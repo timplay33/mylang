@@ -125,6 +125,4 @@ class Parser:
                     return ('if', condition, body, else_body)
                 return ('if', condition, body)
             case _:
-                print(f"Unexpected token: {self.tokens[self.pos]}")
-                self.advance()
-                #raise SyntaxError(f"Unexpected token: {self.tokens[self.pos]}")
+                raise SyntaxError(f"Unexpected token: {self.tokens[self.pos]}")
