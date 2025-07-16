@@ -4,6 +4,8 @@ class Parser:
         self.pos = 0
 
     def peek(self):
+        if self.pos >= len(self.tokens):
+            return 'EOF'
         return self.tokens[self.pos][0]
 
     def advance(self):
@@ -20,11 +22,34 @@ class Parser:
     def parse(self):
         statements = []
         while self.pos < len(self.tokens) and self.peek() != 'EOF':
-            expr = self.expr()
-            if self.peek() == 'SEMI':
-                self.match('SEMI')
-            statements.append(expr)
+            stmt = self.statement()
+            if stmt is not None:
+                statements.append(stmt)
         return statements
+    
+    def statement(self):
+        match self.peek():
+            case 'FUNC':
+                return self.function_declaration()
+            case 'RETURN':
+                self.match('RETURN')
+                expr = self.expr()
+                self.match('SEMI')
+                return ('return', expr)
+            case 'TYPE_INT' | 'TYPE_FLOAT' | 'TYPE_STRING' | 'TYPE_BOOL':
+                return self.variable_declaration()
+            case 'IF':
+                return self.if_statement()
+            case 'WHILE':
+                return self.while_statement()
+            case 'ID':
+                return self.assignment_or_expression_statement()
+            case 'EOF':
+                return None
+            case _:
+                expr = self.expr()
+                self.match('SEMI')
+                return ('expr_stmt', expr)
 
     # expr -> term ((+|-) term)*
     def expr(self):
@@ -47,30 +72,6 @@ class Parser:
     # factor -> NUMBER | (expr)
     def factor(self):
         match self.peek():
-            case 'FUNC':
-                self.match('FUNC')
-                name = self.match('ID')
-                self.match('LPAREN')
-                params = []
-                if self.peek() != 'RPAREN':
-                    params.append((self.match(self.peek()), self.match('ID')))
-                    while self.peek() == 'COMMA':
-                        self.match('COMMA')
-                        params.append((self.match(self.peek()), self.match('ID')))
-                self.match('RPAREN')
-                self.match('LBRACE')
-                body = []
-                while self.peek() != 'RBRACE':
-                    expr = self.expr()
-                    if expr is not None:
-                        body.append(expr)
-                self.match('RBRACE')
-                return ('func', name, params, body)
-            case 'RETURN':
-                self.match('RETURN')
-                expr = self.expr()
-                self.match('SEMI')
-                return ('return', expr)
             case 'SUB':
                 self.match('SUB')
                 node = self.factor()
@@ -79,68 +80,30 @@ class Parser:
                 return self.match('NUMBER')
             case 'BOOL':
                 return self.match('BOOL')
-            case 'TYPE_INT' | 'TYPE_FLOAT' | 'TYPE_STRING' | 'TYPE_BOOL':
-                return self.variable_declaration()
+            case 'STRING':
+                return self.match('STRING')
             case 'ID':
                 name = self.match('ID')
-                match self.peek():
-                    case 'LPAREN':
-                        self.match('LPAREN')
-                        args = []
-                        if self.peek() != 'RPAREN':
+                if self.peek() == 'LPAREN':
+                    self.match('LPAREN')
+                    args = []
+                    if self.peek() != 'RPAREN':
+                        args.append(self.expr())
+                        while self.peek() == 'COMMA':
+                            self.match('COMMA')
                             args.append(self.expr())
-                            while self.peek() == 'COMMA':
-                                self.match('COMMA')
-                                args.append(self.expr())
-                        self.match('RPAREN')
-                        self.match('SEMI')
-                        return ('call', name, args)
-                    case 'ASSIGN':
-                        self.match('ASSIGN')
-                        expr = self.expr()
-                        self.match('SEMI')
-                        return ('assign', name, expr)
-                    case _:
-                        return ('var', name)
+                    self.match('RPAREN')
+                    return ('call', name, args)
+                else:
+                    return ('var', name)
             case 'LPAREN':
                 self.match('LPAREN')
                 node = self.expr()
                 self.match('RPAREN')
                 return node
-            case 'STRING':
-                return self.match('STRING')
-            case 'IF':
-                self.match('IF')
-                self.match('LPAREN')
-                condition = self.expr()
-                self.match('RPAREN')
-                self.match('LBRACE')
-                body = []
-                while self.peek() != 'RBRACE':
-                    body.append(self.expr())
-                self.match('RBRACE')
-                if self.peek() == 'ELSE':
-                    self.match('ELSE')
-                    self.match('LBRACE')
-                    else_body = []
-                    while self.peek() != 'RBRACE':
-                        else_body.append(self.expr())
-                    self.match('RBRACE')
-                    return ('if', condition, body, else_body)
-                return ('if', condition, body)
-            case 'WHILE':
-                self.match('WHILE')
-                self.match('LPAREN')
-                condition = self.expr()
-                self.match('RPAREN')
-                self.match('LBRACE')
-                body = []
-                while self.peek() != 'RBRACE':
-                    body.append(self.expr())
-                self.match('RBRACE')
-                return ('while', condition, body)
             case _:
                 raise SyntaxError(f"Unexpected token: {self.tokens[self.pos]}")
+            
     def variable_declaration(self):
         type_token = self.match(self.peek())
         name = self.match('ID')
@@ -150,3 +113,81 @@ class Parser:
             expr = self.expr()
         self.match('SEMI')
         return ('decl', type_token, name, expr)
+    
+    def function_declaration(self):
+        self.match('FUNC')
+        name = self.match('ID')
+        self.match('LPAREN')
+        params = []
+        if self.peek() != 'RPAREN':
+            params.append((self.match(self.peek()), self.match('ID')))
+            while self.peek() == 'COMMA':
+                self.match('COMMA')
+                params.append((self.match(self.peek()), self.match('ID')))
+        self.match('RPAREN')
+        self.match('LBRACE')
+        body = []
+        while self.peek() != 'RBRACE':
+            stmt = self.statement()
+            if stmt is not None:
+                body.append(stmt)
+        self.match('RBRACE')
+        return ('func', name, params, body)
+    def if_statement(self):
+        self.match('IF')
+        self.match('LPAREN')
+        condition = self.expr()
+        self.match('RPAREN')
+        self.match('LBRACE')
+        body = []
+        while self.peek() != 'RBRACE':
+            stmt = self.statement()
+            if stmt is not None:
+                body.append(stmt)
+        self.match('RBRACE')
+        if self.peek() == 'ELSE':
+            self.match('ELSE')
+            self.match('LBRACE')
+            else_body = []
+            while self.peek() != 'RBRACE':
+                stmt = self.statement()
+                if stmt is not None:
+                    else_body.append(stmt)
+            self.match('RBRACE')
+            return ('if', condition, body, else_body)
+        return ('if', condition, body)
+    def while_statement(self):
+        self.match('WHILE')
+        self.match('LPAREN')
+        condition = self.expr()
+        self.match('RPAREN')
+        self.match('LBRACE')
+        body = []
+        while self.peek() != 'RBRACE':
+            stmt = self.statement()
+            if stmt is not None:
+                body.append(stmt)
+        self.match('RBRACE')
+        return ('while', condition, body)
+    def assignment_or_expression_statement(self):
+        name = self.match('ID')
+        match self.peek():
+            case 'LPAREN':
+                self.match('LPAREN')
+                args = []
+                if self.peek() != 'RPAREN':
+                    args.append(self.expr())
+                    while self.peek() == 'COMMA':
+                        self.match('COMMA')
+                        args.append(self.expr())
+                self.match('RPAREN')
+                self.match('SEMI')
+                return ('expr_stmt', ('call', name, args))
+            case 'ASSIGN':
+                self.match('ASSIGN')
+                expr = self.expr()
+                self.match('SEMI')
+                return ('assign', name, expr)
+            case _:
+                self.match('SEMI')
+                return ('expr_stmt', ('var', name))

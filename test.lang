@@ -1,6 +1,11 @@
 int x;
-x = 5;
-int y = 10;
+x = 7;
 
-print(x / y);
-u = 2;
+while (x) {
+    print(x);
+    x = x-1;
+    if (x-3) {
+        print("jetzt");
+    }
+}
+print(x);
