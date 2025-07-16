@@ -75,10 +75,15 @@ class Environment:
                 case 'call':
                     func_name = node[1]
                     args = [self.evaluate(arg) for arg in node[2]]
-                    if func_name == 'print':
-                        print(*args)
-                        return None
-                    elif func_name in self.funcs:
+                    match func_name:
+                        case 'print':
+                            print(*args)
+                            return None
+                        case 'toInt':
+                            return int(args[0])
+                        case 'toString':
+                            return str(args[0])
+                    if func_name in self.funcs:
                         func_params, func_body = self.funcs[func_name]
                         if len(args) != len(func_params):
                             raise TypeError(f"{func_name}() expects {len(func_params)} args, got {len(args)}")
