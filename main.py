@@ -2,17 +2,16 @@
 """
 MyLang Interpreter - Main Entry Point
 Usage: python main.py [file.mylang]
+       python -m mylang [file.mylang]
 """
 
+from mylang import tokenize, Parser, Environment, LanguageError
 import sys
 import os
 from pathlib import Path
 
-# Import our refactored modules
-from Lexer import tokenize
-from Parser import Parser
-from Evaluator import Environment
-from Error import LanguageError
+# Add src to path so we can import mylang
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 
 def run(code, env, filename=None):
@@ -73,7 +72,7 @@ def _print_debug_info(tokens, ast, env, filename=None):
 
 def console_mode():
     """Interactive console mode for testing"""
-    print("MyLang Interactive Console")
+    print("MyLang Interactive Console v1.0.0")
     print("Type 'exit' to quit")
     print("=" * 40)
 
@@ -98,9 +97,14 @@ def file_mode():
     """Execute a MyLang file"""
     if len(sys.argv) < 2:
         print("Usage: python main.py <file.mylang>")
+        print("   or: python main.py --help")
         sys.exit(1)
 
     filepath = sys.argv[1]
+
+    if filepath in ['--help', '-h']:
+        show_help()
+        return
 
     # Check if file exists
     if not os.path.exists(filepath):
@@ -128,6 +132,22 @@ def file_mode():
     except UnicodeDecodeError:
         print(f"Error: Cannot read file {filepath} - encoding issue")
         sys.exit(1)
+
+
+def show_help():
+    """Show help information"""
+    print("MyLang Programming Language Interpreter v1.0.0")
+    print()
+    print("Usage:")
+    print("  python main.py [file.mylang]    # Run a MyLang program")
+    print("  python main.py                  # Start interactive console")
+    print("  python main.py --help          # Show this help")
+    print()
+    print("Examples:")
+    print("  python main.py examples/comprehensive_test.mylang")
+    print("  python main.py")
+    print()
+    print("For more information, see README.md")
 
 
 def main():

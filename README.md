@@ -16,13 +16,26 @@ A simple, strongly-typed programming language with modern architecture and exten
 ### Running a MyLang Program
 
 ```bash
-python main.py program.mylang
+python main.py examples/hello_world.mylang
 ```
 
 ### Interactive Console
 
 ```bash
 python main.py
+```
+
+### Using as Python Module
+
+```bash
+python -m mylang examples/hello_world.mylang
+```
+
+### Installation
+
+```bash
+pip install -e .
+mylang examples/hello_world.mylang
 ```
 
 ## Language Syntax
@@ -77,39 +90,72 @@ string s = toString(123);          // Convert to string
 
 ## Examples
 
-See `test.mylang` for a comprehensive example program demonstrating all language features.
+### Hello World
+
+```mylang
+print("Hello, World!");
+```
+
+### Simple Calculator
+
+```mylang
+int a = 10;
+int b = 3;
+print("a + b =", a + b);
+```
+
+See the `examples/` directory for more comprehensive examples:
+
+- `examples/hello_world.mylang` - Basic hello world
+- `examples/calculator.mylang` - Arithmetic operations
+- `examples/fibonacci.mylang` - Recursive functions
+- `examples/comprehensive_test.mylang` - Full language features
 
 ## Extending the Language
 
-The language is designed to be easily extensible. See `extension_example.py` for examples of adding new built-in functions like `len()`, `max()`, `min()`, and `abs()`.
+The language is designed to be easily extensible. See `examples/extension_demo.py` for examples of adding new built-in functions like `len()`, `max()`, `min()`, and `abs()`.
 
 ## Architecture
 
 The language implementation consists of:
 
-- **Lexer.py**: Tokenization
-- **Parser.py**: Syntax analysis and AST generation
-- **AST.py**: Abstract Syntax Tree node definitions
-- **Evaluator.py**: AST evaluation with proper scoping
-- **Error.py**: Comprehensive error handling system
-- **Builtins.py**: Extensible built-in function system
-- **TokenConfig.py**: Token type definitions
+- **src/mylang/lexer.py**: Tokenization
+- **src/mylang/parser.py**: Syntax analysis and AST generation  
+- **src/mylang/ast.py**: Abstract Syntax Tree node definitions
+- **src/mylang/evaluator.py**: AST evaluation with proper scoping
+- **src/mylang/error.py**: Comprehensive error handling system
+- **src/mylang/builtins.py**: Extensible built-in function system
+- **src/mylang/tokens.py**: Token type definitions
 
 ## File Structure
 
-```
+```text
 mylang/
-├── main.py              # Main interpreter entry point
-├── Lexer.py            # Tokenizer
-├── Parser.py           # Parser
-├── AST.py              # AST node classes
-├── Evaluator.py        # Evaluator with scoping
-├── Error.py            # Error handling
-├── Builtins.py         # Built-in functions
-├── TokenConfig.py      # Token configuration
-├── test.mylang         # Example program
-├── extension_example.py # Extensibility demo
-└── README.md           # This file
+├── main.py                           # Main interpreter entry point
+├── setup.py                          # Python package setup
+├── README.md                         # This file
+├── src/
+│   └── mylang/                       # Core language package
+│       ├── __init__.py              # Package initialization
+│       ├── __main__.py              # Module entry point  
+│       ├── lexer.py                 # Tokenizer
+│       ├── parser.py                # Parser
+│       ├── ast.py                   # AST node classes
+│       ├── evaluator.py             # Evaluator with scoping
+│       ├── error.py                 # Error handling
+│       ├── builtins.py              # Built-in functions
+│       └── tokens.py                # Token configuration
+├── examples/                         # Example programs
+│   ├── hello_world.mylang           # Basic hello world
+│   ├── calculator.mylang            # Arithmetic demo
+│   ├── fibonacci.mylang             # Recursive functions
+│   ├── comprehensive_test.mylang    # Full feature test
+│   └── extension_demo.py            # Extensibility demo
+├── tests/                           # Unit tests
+│   └── test_mylang.py              # Test suite
+└── docs/                           # Documentation
+    ├── language_spec.md            # Language specification
+    └── REFACTORING_SUMMARY.md     # Implementation details
 ```
 
 ## Development

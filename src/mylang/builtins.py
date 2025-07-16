@@ -1,6 +1,6 @@
 from typing import Any, List, Callable
 from abc import ABC, abstractmethod
-from Error import RuntimeError
+from .error import RuntimeError
 
 
 class BuiltinFunction(ABC):

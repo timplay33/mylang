@@ -3,12 +3,17 @@
 Example of extending MyLang with new built-in functions
 This demonstrates how easy it is to add new functionality to the language.
 
-Usage: python extension_example.py
+Usage: python extension_demo.py
 """
 
-from Builtins import BuiltinFunction, BuiltinRegistry
-from Error import RuntimeError
 from typing import Any, List
+from mylang.error import RuntimeError
+from mylang.builtins import BuiltinFunction, BuiltinRegistry
+import sys
+import os
+
+# Add parent src to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 
 class LengthFunction(BuiltinFunction):
@@ -80,7 +85,7 @@ class AbsFunction(BuiltinFunction):
 
 def create_extended_environment():
     """Create an environment with extended built-in functions"""
-    from Evaluator import Environment
+    from mylang import Environment
 
     env = Environment()
 
@@ -131,8 +136,7 @@ def demo_extended_functions():
     print("-" * 40)
 
     try:
-        from Lexer import tokenize
-        from Parser import Parser
+        from mylang import tokenize, Parser
 
         tokens = tokenize(test_code)
         parser = Parser(tokens)

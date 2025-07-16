@@ -1,0 +1,16 @@
+// Calculator example demonstrating arithmetic operations
+int a = 10;
+int b = 3;
+
+print("Calculator Demo");
+print("a =", a);
+print("b =", b);
+print("a + b =", a + b);
+print("a - b =", a - b);
+print("a * b =", a * b);
+print("a / b =", a / b);
+
+// String operations
+string name = "Alice";
+string greeting = "Hello, " + name + "!";
+print(greeting);
