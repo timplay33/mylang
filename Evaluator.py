@@ -9,19 +9,65 @@ class Environment:
             for statement in node:
                 result = self.evaluate(statement)
             return result
-            
+
         if isinstance(node, (int, float, str, bool, type(None))):
             return node
         if isinstance(node, tuple):
             match node[0]:
-                case '+': return self.evaluate(node[1]) + self.evaluate(node[2])
-                case '-': 
-                    if (len(node) > 2):
-                        return self.evaluate(node[1]) - self.evaluate(node[2])
-                    elif (len(node) == 2):
-                        return -self.evaluate(node[1])
-                case '*': return self.evaluate(node[1]) * self.evaluate(node[2])
-                case '/': return self.evaluate(node[1]) / self.evaluate(node[2])
+                case '+':
+                    left = self.evaluate(node[1])
+                    right = self.evaluate(node[2])
+                    if type(left) != type(right):
+                        raise TypeError(
+                            f"Type mismatch for '+': {type(left).__name__} and {type(right).__name__}")
+                    if isinstance(left, (int, float)):
+                        return left + right
+                    elif isinstance(left, str):
+                        return left + right
+                    else:
+                        raise TypeError(
+                            f"Unsupported operand type for '+': {type(left).__name__}")
+                case '-':
+                    if len(node) > 2:
+                        left = self.evaluate(node[1])
+                        right = self.evaluate(node[2])
+                        if type(left) != type(right):
+                            raise TypeError(
+                                f"Type mismatch for '-': {type(left).__name__} and {type(right).__name__}")
+                        if not isinstance(left, (int, float)):
+                            raise TypeError(
+                                f"Unsupported operand type for '-': {type(left).__name__}")
+                        return left - right
+                    elif len(node) == 2:
+                        val = self.evaluate(node[1])
+                        if not isinstance(val, (int, float)):
+                            raise TypeError(
+                                f"Unsupported operand type for unary '-': {type(val).__name__}")
+                        return -val
+                case '*':
+                    left = self.evaluate(node[1])
+                    right = self.evaluate(node[2])
+                    if type(left) != type(right):
+                        raise TypeError(
+                            f"Type mismatch for '*': {type(left).__name__} and {type(right).__name__}")
+                    if not isinstance(left, (int, float)):
+                        raise TypeError(
+                            f"Unsupported operand type for '*': {type(left).__name__}")
+                    return left * right
+                case '/':
+                    left = self.evaluate(node[1])
+                    right = self.evaluate(node[2])
+                    if not isinstance(left, (int, float)) or not isinstance(right, (int, float)):
+                        raise TypeError(
+                            f"Unsupported operand type for '/': {type(left).__name__} and {type(right).__name__}")
+                    if isinstance(left, int) and isinstance(right, int):
+                        if right == 0:
+                            raise ZeroDivisionError("division by zero")
+                        return left // right  # integer division
+                    else:
+                        if right == 0:
+                            raise ZeroDivisionError("division by zero")
+                        return float(left) / float(right)  # float division
                 case '||': return self.evaluate(node[1]) or self.evaluate(node[2])
                 case '&&': return self.evaluate(node[1]) and self.evaluate(node[2])
                 case '==': return self.evaluate(node[1]) == self.evaluate(node[2])
@@ -31,17 +77,19 @@ class Environment:
                 case '<': return self.evaluate(node[1]) < self.evaluate(node[2])
                 case '>': return self.evaluate(node[1]) > self.evaluate(node[2])
                 case '!': return not self.evaluate(node[1])
-                case '++': 
+                case '++':
                     inc = 1
                     if (len(node) > 2):
                         inc = node[2]
-                    self.vars[node[1]] = (self.vars[node[1]][0]+inc,self.vars[node[1]][1])
+                    self.vars[node[1]] = (
+                        self.vars[node[1]][0]+inc, self.vars[node[1]][1])
                     return None
-                case '--': 
+                case '--':
                     inc = 1
                     if (len(node) > 2):
                         inc = node[2]
-                    self.vars[node[1]] = (self.vars[node[1]][0]-inc,self.vars[node[1]][1])
+                    self.vars[node[1]] = (
+                        self.vars[node[1]][0]-inc, self.vars[node[1]][1])
                     return None
                 case 'expr_stmt':
                     return self.evaluate(node[1])
@@ -51,27 +99,32 @@ class Environment:
                     if name in self.vars:
                         raise NameError(f"Variable '{name}' already declared")
                     if type_str == 'int' and not isinstance(value, (int, type(None))):
-                        raise RuntimeError(f"Expected int, got {type(value).__name__}")
+                        raise RuntimeError(
+                            f"Expected int, got {type(value).__name__}")
                     if type_str == 'float' and not isinstance(value, (float, int, type(None))):
-                        raise RuntimeError(f"Expected float, got {type(value).__name__}")
+                        raise RuntimeError(
+                            f"Expected float, got {type(value).__name__}")
                     if type_str == 'string' and not isinstance(value, (str, type(None))):
-                        raise RuntimeError(f"Expected string, got {type(value).__name__}")
+                        raise RuntimeError(
+                            f"Expected string, got {type(value).__name__}")
                     if type_str == 'bool' and not isinstance(value, (bool, type(None))):
-                        raise RuntimeError(f"Expected bool, got {type(value).__name__}")
+                        raise RuntimeError(
+                            f"Expected bool, got {type(value).__name__}")
                     self.vars[name] = (value, type_str)
                     return value
-                case 'assign': 
+                case 'assign':
                     name = node[1]
                     if name not in self.vars:
                         raise NameError(f"Undefined variable: {name}")
-                    value = self.formatVar(self.vars[name][1], self.evaluate(node[2]))
+                    value = self.formatVar(
+                        self.vars[name][1], self.evaluate(node[2]))
                     self.vars[name] = (value, self.vars[name][1])
                     return value
-                case 'var': 	
+                case 'var':
                     name = node[1]
                     if name not in self.vars:
                         raise NameError(f"Undefined variable: {name}")
-                    return self.formatVar(self.vars[name][1],self.vars[name][0])
+                    return self.formatVar(self.vars[name][1], self.vars[name][0])
                 case 'call':
                     func_name = node[1]
                     args = [self.evaluate(arg) for arg in node[2]]
@@ -88,8 +141,9 @@ class Environment:
                     if func_name in self.funcs:
                         func_params, func_body = self.funcs[func_name]
                         if len(args) != len(func_params):
-                            raise TypeError(f"{func_name}() expects {len(func_params)} args, got {len(args)}")
-                        
+                            raise TypeError(
+                                f"{func_name}() expects {len(func_params)} args, got {len(args)}")
+
                         local = Environment()
                         local.funcs = self.funcs
                         local.vars = self.vars.copy()
@@ -138,13 +192,14 @@ class Environment:
         raise TypeError(f"Invalid AST node: {node}")
 
     def formatVar(self, type, value):
-        if type == 'int':
-            return int(value) if value is not None else None
-        elif type == 'float':
-            return float(value) if value is not None else None
-        elif type == 'string':
-            return str(value) if value is not None else None
-        elif type == 'bool':
-            return bool(value) if value is not None else None
-        else:
-            raise TypeError(f"Unknown type: {type}")
+        converters = {
+            'int': int,
+            'float': float,
+            'string': str,
+            'bool': bool
+        }
+        if value is None:
+            return None
+        if type in converters:
+            return converters[type](value)
+        raise TypeError(f"Unknown type: {type}")
