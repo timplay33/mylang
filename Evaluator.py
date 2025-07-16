@@ -15,11 +15,22 @@ class Environment:
         if isinstance(node, tuple):
             match node[0]:
                 case '+': return self.evaluate(node[1]) + self.evaluate(node[2])
-                case '-': return self.evaluate(node[1]) - self.evaluate(node[2])
+                case '-': 
+                    if (len(node) > 2):
+                        return self.evaluate(node[1]) - self.evaluate(node[2])
+                    elif (len(node) == 2):
+                        return -self.evaluate(node[1])
                 case '*': return self.evaluate(node[1]) * self.evaluate(node[2])
                 case '/': return self.evaluate(node[1]) / self.evaluate(node[2])
+                case '||': return self.evaluate(node[1]) or self.evaluate(node[2])
+                case '&&': return self.evaluate(node[1]) and self.evaluate(node[2])
                 case '==': return self.evaluate(node[1]) == self.evaluate(node[2])
-                case 'neg': return -self.evaluate(node[1])
+                case '!=': return self.evaluate(node[1]) != self.evaluate(node[2])
+                case '<=': return self.evaluate(node[1]) <= self.evaluate(node[2])
+                case '>=': return self.evaluate(node[1]) >= self.evaluate(node[2])
+                case '<': return self.evaluate(node[1]) < self.evaluate(node[2])
+                case '>': return self.evaluate(node[1]) > self.evaluate(node[2])
+                case '!': return not self.evaluate(node[1])
                 case 'expr_stmt':
                     return self.evaluate(node[1])
                 case 'decl':

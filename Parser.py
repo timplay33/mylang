@@ -110,20 +110,16 @@ class Parser:
         return node
     
     def unary(self):
-        node = self.factor()
-        while self.peek() in ('NOT', 'SUB'):
+        if self.peek() in ('NOT', 'SUB'):
             op = self.match(self.peek())
-            right = self.factor()
-            node = (op, node, right)
-        return node
+            node = self.unary()  # Recursive call for nested unary operators
+            return (op, node)
+        else:
+            return self.factor()
 
     # factor -> NUMBER | (expr)
     def factor(self):
         match self.peek():
-            case 'SUB':
-                self.match('SUB')
-                node = self.factor()
-                return ('neg', node)
             case 'NUMBER':
                 return self.match('NUMBER')
             case 'BOOL':
