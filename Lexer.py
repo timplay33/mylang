@@ -3,6 +3,11 @@ import re
 # === Lexer ===
 def tokenize(code):
     token_specification = [
+        # Comments (must come before other operators)
+        ('COMMENT_LINE',  r'//.*'),           # Line comment
+        ('COMMENT_BLOCK', r'/\*[\s\S]*?\*/'),      # Block comment
+
+
         ('FUNC',     r'func'),
         ('RETURN',   r'return'),
         ('IF',       r'if'),
@@ -16,7 +21,7 @@ def tokenize(code):
         ('NUMBER',   r'\d+(\.\d+)?'), # Integer or decimal
         ('ID',       r'[a-zA-Z_]\w*'),
         ('STRING',   r'"[^"]*"'),
-                
+
         # Comparison operators (order matters - longer patterns first!)
         ('LESS_EQUAL',    r'<='),
         ('GREATER_EQUAL', r'>='),
@@ -63,7 +68,7 @@ def tokenize(code):
                 tokens.append(('STRING', value[1:-1]))
             case 'BOOL':
                 tokens.append(('BOOL', value == 'true'))
-            case 'SKIP':
+            case 'COMMENT_LINE' | 'COMMENT_BLOCK' | 'SKIP':
                 continue
             case _:
                 tokens.append((kind, value))

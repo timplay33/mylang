@@ -1,4 +1,17 @@
-string x = "7.8";
-int y = 6;
-print(toFloat(x) + y);
+/* 
+Function to 
+calculate factorial
+*/
+func factorial(int n) {
+    int result = 1;
+    int i = 1;
+    while (i <= n) {
+        result = result * i;
+        i++;
+    }
+    return result;
+}
 
+// Main program
+int number = 5;
+print("Factorial of", number, "is", factorial(number));
