@@ -18,6 +18,7 @@ class Environment:
                 case '-': return self.evaluate(node[1]) - self.evaluate(node[2])
                 case '*': return self.evaluate(node[1]) * self.evaluate(node[2])
                 case '/': return self.evaluate(node[1]) / self.evaluate(node[2])
+                case '==': return self.evaluate(node[1]) == self.evaluate(node[2])
                 case 'neg': return -self.evaluate(node[1])
                 case 'expr_stmt':
                     return self.evaluate(node[1])

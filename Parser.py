@@ -50,9 +50,22 @@ class Parser:
                 expr = self.expr()
                 self.match('SEMI')
                 return ('expr_stmt', expr)
-
-    # expr -> term ((+|-) term)*
+            
+    # expr -> comparison    
     def expr(self):
+        return self.comparison()
+
+    # comparison -> addition (== addition)*
+    def comparison(self):
+        node = self.addition()
+        while self.peek() in ('EQUAL',):
+            op = self.match(self.peek())
+            right = self.addition()
+            node = (op, node, right)
+        return node
+
+    # addition -> term ((+|-) term)*
+    def addition(self):
         node = self.term()
         while self.peek() in ('ADD', 'SUB'):
             op = self.match(self.peek())

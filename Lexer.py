@@ -16,6 +16,7 @@ def tokenize(code):
         ('NUMBER',   r'\d+(\.\d+)?'), # Integer or decimal
         ('ID',       r'[a-zA-Z_]\w*'),
         ('STRING',   r'"[^"]*"'),
+        ('EQUAL',   r'=='),
         ('ASSIGN',   r'='),
         ('ADD',      r'\+'),
         ('SUB',      r'-'),

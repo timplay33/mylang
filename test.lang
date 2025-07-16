@@ -2,10 +2,11 @@ int x;
 x = 7;
 
 while (x) {
-    print(x);
-    x = x-1;
-    if (x-3) {
+    if (x == 5) {
         print("jetzt");
+    } else {
+        print(x);
     }
+    x = x-1;
 }
 print(x);
