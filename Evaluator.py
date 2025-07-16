@@ -1,13 +1,155 @@
+from typing import Any, Dict, List, Optional, Union
+from AST import *
+from Error import *
+from Builtins import BuiltinRegistry
+
+
+class Scope:
+    """Represents a variable scope"""
+
+    def __init__(self, parent: Optional['Scope'] = None):
+        self.parent = parent
+        self.variables: Dict[str, tuple] = {}  # name -> (value, type)
+
+    def define(self, name: str, value: Any, type_name: str):
+        """Define a new variable in this scope"""
+        if name in self.variables:
+            raise EvaluationError(
+                f"Variable '{name}' already defined in this scope")
+        self.variables[name] = (value, type_name)
+
+    def get(self, name: str) -> tuple:
+        """Get a variable from this scope or parent scopes"""
+        if name in self.variables:
+            return self.variables[name]
+        if self.parent:
+            return self.parent.get(name)
+        raise UndefinedVariableError(f"Undefined variable: {name}")
+
+    def set(self, name: str, value: Any):
+        """Set a variable in this scope or parent scopes"""
+        if name in self.variables:
+            old_value, type_name = self.variables[name]
+            self.variables[name] = (value, type_name)
+            return
+        if self.parent:
+            self.parent.set(name, value)
+            return
+        raise UndefinedVariableError(f"Undefined variable: {name}")
+
+    def get_type(self, name: str) -> str:
+        """Get the type of a variable"""
+        _, type_name = self.get(name)
+        return type_name
+
+
+class TypeSystem:
+    """Handles type checking and conversions"""
+
+    @staticmethod
+    def check_binary_op(left: Any, right: Any, op: str) -> bool:
+        """Check if binary operation is valid"""
+        if op in ['+', '-', '*', '/']:
+            # Arithmetic operations
+            if op == '+':
+                # Addition works for numbers and strings
+                return (isinstance(left, (int, float)) and isinstance(right, (int, float))) or \
+                       (isinstance(left, str) and isinstance(right, str))
+            else:
+                # Other arithmetic operations only work for numbers
+                return isinstance(left, (int, float)) and isinstance(right, (int, float))
+        elif op in ['==', '!=']:
+            # Equality comparison works for same types
+            return type(left) == type(right)
+        elif op in ['<', '>', '<=', '>=']:
+            # Ordering comparison works for numbers and strings
+            return (isinstance(left, (int, float)) and isinstance(right, (int, float))) or \
+                   (isinstance(left, str) and isinstance(right, str))
+        elif op in ['&&', '||']:
+            # Logical operations work for any types (truthy/falsy)
+            return True
+        return False
+
+    @staticmethod
+    def convert_to_type(value: Any, target_type: str) -> Any:
+        """Convert value to target type"""
+        if value is None:
+            return None
+
+        converters = {
+            'int': int,
+            'float': float,
+            'string': str,
+            'bool': bool
+        }
+
+        if target_type in converters:
+            try:
+                return converters[target_type](value)
+            except (ValueError, TypeError) as e:
+                raise TypeMismatchError(
+                    f"Cannot convert {value} to {target_type}: {e}")
+
+        raise TypeMismatchError(f"Unknown type: {target_type}")
+
+
+class ReturnException(Exception):
+    """Exception used for return statement control flow"""
+
+    def __init__(self, value: Any):
+        self.value = value
+
+
 class Environment:
+    """Legacy environment class for backward compatibility"""
+
     def __init__(self):
-        self.vars = {}
-        self.funcs = {}
+        self.evaluator = Evaluator()
+
+    @property
+    def vars(self):
+        """Legacy vars property"""
+        return {name: (value, type_name) for name, (value, type_name) in self.evaluator.current_scope.variables.items()}
+
+    @property
+    def funcs(self):
+        """Legacy funcs property"""
+        return self.evaluator.functions
 
     def evaluate(self, node):
-        if isinstance(node, list):  # Add support for lists of statements
+        """Legacy evaluate method"""
+        return self.evaluator.evaluate_legacy(node)
+
+    def formatVar(self, type_name, value):
+        """Legacy formatVar method"""
+        return self.evaluator.type_system.convert_to_type(value, type_name)
+
+
+class Evaluator:
+    """AST evaluator using visitor pattern"""
+
+    def __init__(self):
+        self.global_scope = Scope()
+        self.current_scope = self.global_scope
+        # name -> (params, body, return_type)
+        self.functions: Dict[str, tuple] = {}
+        self.type_system = TypeSystem()
+        self.builtins = BuiltinRegistry()
+
+    def evaluate(self, node: ASTNode) -> Any:
+        """Main evaluation method that dispatches to specific evaluators"""
+        method_name = f'evaluate_{type(node).__name__}'
+        method = getattr(self, method_name, None)
+        if method is None:
+            raise EvaluationError(f"No evaluator for {type(node).__name__}")
+        return method(node)
+
+    def evaluate_legacy(self, node) -> Any:
+        """Evaluate legacy tuple-based AST nodes for backward compatibility"""
+        if isinstance(node, list):
             result = None
             for statement in node:
-                result = self.evaluate(statement)
+                result = self.evaluate_legacy(statement)
             return result
 
         if isinstance(node, (int, float, str, bool, type(None))):
@@ -15,179 +157,173 @@ class Environment:
 
         if isinstance(node, tuple):
             op = node[0]
+
             # Arithmetic operators
             if op in ('+', '-', '*', '/'):
-                left = self.evaluate(node[1])
-                right = self.evaluate(node[2]) if len(node) > 2 else None
+                left = self.evaluate_legacy(node[1])
+                right = self.evaluate_legacy(
+                    node[2]) if len(node) > 2 else None
+
                 if op == '+':
-                    if type(left) != type(right):
-                        raise TypeError(
+                    if not self.type_system.check_binary_op(left, right, op):
+                        raise TypeMismatchError(
                             f"Type mismatch for '+': {type(left).__name__} and {type(right).__name__}")
                     return left + right
                 elif op == '-':
                     if right is not None:
-                        if type(left) != type(right):
-                            raise TypeError(
+                        if not self.type_system.check_binary_op(left, right, op):
+                            raise TypeMismatchError(
                                 f"Type mismatch for '-': {type(left).__name__} and {type(right).__name__}")
-                        if not isinstance(left, (int, float)):
-                            raise TypeError(
-                                f"Unsupported operand type for '-': {type(left).__name__}")
                         return left - right
                     else:
                         if not isinstance(left, (int, float)):
-                            raise TypeError(
+                            raise TypeMismatchError(
                                 f"Unsupported operand type for unary '-': {type(left).__name__}")
                         return -left
                 elif op == '*':
-                    if type(left) != type(right):
-                        raise TypeError(
+                    if not self.type_system.check_binary_op(left, right, op):
+                        raise TypeMismatchError(
                             f"Type mismatch for '*': {type(left).__name__} and {type(right).__name__}")
-                    if not isinstance(left, (int, float)):
-                        raise TypeError(
-                            f"Unsupported operand type for '*': {type(left).__name__}")
                     return left * right
                 elif op == '/':
-                    if not isinstance(left, (int, float)) or not isinstance(right, (int, float)):
-                        raise TypeError(
-                            f"Unsupported operand type for '/': {type(left).__name__} and {type(right).__name__}")
+                    if not self.type_system.check_binary_op(left, right, op):
+                        raise TypeMismatchError(
+                            f"Type mismatch for '/': {type(left).__name__} and {type(right).__name__}")
                     if right == 0:
-                        raise ZeroDivisionError("division by zero")
+                        raise EvaluationError("division by zero")
                     return left // right if isinstance(left, int) and isinstance(right, int) else float(left) / float(right)
 
             # Logical and comparison operators
             if op in ('||', '&&', '==', '!=', '<=', '>=', '<', '>'):
-                left = self.evaluate(node[1])
-                right = self.evaluate(node[2])
-                return {
-                    '||': left or right,
-                    '&&': left and right,
-                    '==': left == right,
-                    '!=': left != right,
-                    '<=': left <= right,
-                    '>=': left >= right,
-                    '<': left < right,
-                    '>': left > right
-                }[op]
+                left = self.evaluate_legacy(node[1])
+                right = self.evaluate_legacy(node[2])
+
+                operations = {
+                    '||': lambda l, r: l or r,
+                    '&&': lambda l, r: l and r,
+                    '==': lambda l, r: l == r,
+                    '!=': lambda l, r: l != r,
+                    '<=': lambda l, r: l <= r,
+                    '>=': lambda l, r: l >= r,
+                    '<': lambda l, r: l < r,
+                    '>': lambda l, r: l > r
+                }
+                return operations[op](left, right)
 
             if op == '!':
-                return not self.evaluate(node[1])
+                return not self.evaluate_legacy(node[1])
 
             if op == 'expr_stmt':
-                return self.evaluate(node[1])
+                return self.evaluate_legacy(node[1])
 
             if op == 'decl':
                 _, type_str, name, expr = node
-                value = self.evaluate(expr)
-                if name in self.vars:
-                    raise NameError(f"Variable '{name}' already declared")
-                if type_str == 'int' and not isinstance(value, (int, type(None))):
-                    raise RuntimeError(
-                        f"Expected int, got {type(value).__name__}")
-                if type_str == 'float' and not isinstance(value, (float, type(None))):
-                    raise RuntimeError(
-                        f"Expected float, got {type(value).__name__}")
-                if type_str == 'string' and not isinstance(value, (str, type(None))):
-                    raise RuntimeError(
-                        f"Expected string, got {type(value).__name__}")
-                if type_str == 'bool' and not isinstance(value, (bool, type(None))):
-                    raise RuntimeError(
-                        f"Expected bool, got {type(value).__name__}")
-                self.vars[name] = (value, type_str)
+                value = self.evaluate_legacy(expr) if expr else None
+
+                if value is not None:
+                    value = self.type_system.convert_to_type(value, type_str)
+
+                self.current_scope.define(name, value, type_str)
                 return value
 
             if op == 'assign':
                 name = node[1]
-                if name not in self.vars:
-                    raise NameError(f"Undefined variable: {name}")
-                value = self.formatVar(
-                    self.vars[name][1], self.evaluate(node[2]))
-                self.vars[name] = (value, self.vars[name][1])
+                value = self.evaluate_legacy(node[2])
+                type_name = self.current_scope.get_type(name)
+                value = self.type_system.convert_to_type(value, type_name)
+                self.current_scope.set(name, value)
                 return value
 
             if op == 'var':
                 name = node[1]
-                if name not in self.vars:
-                    raise NameError(f"Undefined variable: {name}")
-                return self.formatVar(self.vars[name][1], self.vars[name][0])
+                value, _ = self.current_scope.get(name)
+                return value
 
             if op == 'call':
                 func_name = node[1]
-                args = [self.evaluate(arg) for arg in node[2]]
-                if func_name == 'print':
-                    print(*args)
-                    return None
-                if func_name == 'toInt':
-                    return int(args[0])
-                if func_name == 'toString':
-                    return str(args[0])
-                if func_name == 'toFloat':
-                    return float(args[0])
-                if func_name in self.funcs:
-                    func_params, func_body, func_ret_type = self.funcs[func_name]
+                args = [self.evaluate_legacy(arg) for arg in node[2]]
+
+                # Check built-in functions first
+                if self.builtins.has_function(func_name):
+                    return self.builtins.call(func_name, args)
+
+                # Check user-defined functions
+                if func_name in self.functions:
+                    func_params, func_body, func_ret_type = self.functions[func_name]
                     if len(args) != len(func_params):
-                        raise TypeError(
+                        raise EvaluationError(
                             f"{func_name}() expects {len(func_params)} args, got {len(args)}")
-                    local = Environment()
-                    local.funcs = self.funcs
-                    local.vars = self.vars.copy()
-                    for param, arg_val in zip(func_params, args):
-                        local.vars[param[1]] = (arg_val, param[0])
-                    result = local.evaluate(func_body)
-                    if func_ret_type:
-                        result = self.formatVar(func_ret_type, result)
-                    return result
-                raise NameError(f"Unknown function: {func_name}")
+
+                    # Create new scope for function execution
+                    return self.with_new_scope(lambda: self._execute_function(func_params, func_body, func_ret_type, args))()
+
+                raise UndefinedFunctionError(f"Unknown function: {func_name}")
 
             if op == 'func':
                 name = node[1]
                 params = node[2]
                 body = node[3]
                 return_type = node[4] if len(node) > 4 else None
-                self.funcs[name] = (params, body, return_type)
+                self.functions[name] = (params, body, return_type)
                 return f"<function {name}>"
 
             if op == 'return':
-                return self.evaluate(node[1])
+                value = self.evaluate_legacy(
+                    node[1]) if len(node) > 1 else None
+                raise ReturnException(value)
 
             if op == 'if':
-                condition = self.evaluate(node[1])
+                condition = self.evaluate_legacy(node[1])
                 if condition:
-                    result = None
-                    local_env = Environment()
-                    local_env.vars = self.vars
-                    for stmt in node[2]:
-                        result = local_env.evaluate(stmt)
-                    return result
-                elif len(node) > 3:  # Check for else clause
-                    result = None
-                    local_env = Environment()
-                    local_env.vars = self.vars
-                    for stmt in node[3]:
-                        result = local_env.evaluate(stmt)
-                    return result
+                    return self.with_new_scope(lambda: self._execute_block(node[2]))()
+                elif len(node) > 3:  # else clause
+                    return self.with_new_scope(lambda: self._execute_block(node[3]))()
                 return None
 
             if op == 'while':
                 condition = node[1]
                 body = node[2]
-                while self.evaluate(condition):
-                    local_env = Environment()
-                    local_env.vars = self.vars
-                    for stmt in body:
-                        local_env.evaluate(stmt)
-                return None
+                result = None
+                while self.evaluate_legacy(condition):
+                    result = self.with_new_scope(
+                        lambda: self._execute_block(body))()
+                return result
 
-        raise TypeError(f"Invalid AST node: {node}")
+        raise EvaluationError(f"Invalid AST node: {node}")
 
-    def formatVar(self, type, value):
-        converters = {
-            'int': int,
-            'float': float,
-            'string': str,
-            'bool': bool
-        }
-        if value is None:
-            return None
-        if type in converters:
-            return converters[type](value)
-        raise TypeError(f"Unknown type: {type}")
+    def _execute_function(self, params, body, return_type, args):
+        """Execute a function with given parameters and arguments"""
+        # Bind parameters to arguments
+        for param, arg_val in zip(params, args):
+            param_type, param_name = param
+            converted_arg = self.type_system.convert_to_type(
+                arg_val, param_type)
+            self.current_scope.define(param_name, converted_arg, param_type)
+
+        try:
+            result = self._execute_block(body)
+            if return_type:
+                result = self.type_system.convert_to_type(result, return_type)
+            return result
+        except ReturnException as ret:
+            if return_type:
+                return self.type_system.convert_to_type(ret.value, return_type)
+            return ret.value
+
+    def _execute_block(self, statements):
+        """Execute a block of statements"""
+        result = None
+        for stmt in statements:
+            result = self.evaluate_legacy(stmt)
+        return result
+
+    def with_new_scope(self, func):
+        """Context manager for creating new scopes"""
+        def wrapper(*args, **kwargs):
+            old_scope = self.current_scope
+            self.current_scope = Scope(parent=old_scope)
+            try:
+                return func(*args, **kwargs)
+            finally:
+                self.current_scope = old_scope
+        return wrapper
