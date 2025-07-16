@@ -1,12 +1,4 @@
-int x;
-x = 7;
+string x = "7.8";
+int y = 6;
+print(toFloat(x) + y);
 
-while (x >= 0) {
-    if (x == 5) {
-        print("jetzt");
-    } else {
-        print(!x, -x, x);
-    }
-    x--5;
-    x++3;
-}

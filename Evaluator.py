@@ -83,6 +83,8 @@ class Environment:
                             return int(args[0])
                         case 'toString':
                             return str(args[0])
+                        case 'toFloat':
+                            return float(args[0])
                     if func_name in self.funcs:
                         func_params, func_body = self.funcs[func_name]
                         if len(args) != len(func_params):
