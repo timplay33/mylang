@@ -16,12 +16,28 @@ def tokenize(code):
         ('NUMBER',   r'\d+(\.\d+)?'), # Integer or decimal
         ('ID',       r'[a-zA-Z_]\w*'),
         ('STRING',   r'"[^"]*"'),
-        ('EQUAL',   r'=='),
+                
+        # Comparison operators (order matters - longer patterns first!)
+        ('LESS_EQUAL',    r'<='),
+        ('GREATER_EQUAL', r'>='),
+        ('EQUAL',         r'=='),
+        ('NOT_EQUAL',     r'!='),
+        ('LESS',          r'<'),
+        ('GREATER',       r'>'),
+
+        # Logical operators
+        ('AND',     r'&&'),
+        ('OR',      r'\|\|'),
+        ('NOT',     r'!'),
+
+        # Assignment and arithmetic
         ('ASSIGN',   r'='),
         ('ADD',      r'\+'),
         ('SUB',      r'-'),
         ('MUL',      r'\*'),
         ('DIV',      r'/'),
+
+        # Delimiters
         ('LPAREN',   r'\('),
         ('RPAREN',   r'\)'),
         ('LBRACE', r'\{'),

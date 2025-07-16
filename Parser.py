@@ -53,12 +53,39 @@ class Parser:
             
     # expr -> comparison    
     def expr(self):
-        return self.comparison()
+        return self.logical_or()
 
-    # comparison -> addition (== addition)*
+    # logical_or -> logical_and (|| logical_and)*
+    def logical_or(self):
+        node = self.logical_and()
+        while self.peek() in ('OR',):
+            op = self.match(self.peek())
+            right = self.logical_and()
+            node = (op, node, right)
+        return node
+    
+    # logical_and -> equality (&& equality)*
+    def logical_and(self):
+        node = self.equality()
+        while self.peek() in ('AND',):
+            op = self.match(self.peek())
+            right = self.equality()
+            node = (op, node, right)
+        return node
+    
+    # equality -> comparison ((==|!=) comparison)*
+    def equality(self):
+        node = self.comparison()
+        while self.peek() in ('EQUAL', 'NOT_EQUAL'):
+            op = self.match(self.peek())
+            right = self.comparison()
+            node = (op, node, right)
+        return node
+    
+    # comparison -> addition ((<|>|<=|>=) addition)*
     def comparison(self):
         node = self.addition()
-        while self.peek() in ('EQUAL',):
+        while self.peek() in ('LESS', 'GREATER', 'LESS_EQUAL', 'GREATER_EQUAL'):
             op = self.match(self.peek())
             right = self.addition()
             node = (op, node, right)
@@ -75,8 +102,16 @@ class Parser:
 
     # term -> factor ((*|/) factor)*
     def term(self):
-        node = self.factor()
+        node = self.unary()
         while self.peek() in ('MUL', 'DIV'):
+            op = self.match(self.peek())
+            right = self.unary()
+            node = (op, node, right)
+        return node
+    
+    def unary(self):
+        node = self.factor()
+        while self.peek() in ('NOT', 'SUB'):
             op = self.match(self.peek())
             right = self.factor()
             node = (op, node, right)

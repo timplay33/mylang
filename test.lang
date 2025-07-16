@@ -5,7 +5,7 @@ while (x) {
     if (x == 5) {
         print("jetzt");
     } else {
-        print(x);
+        print(!x);
     }
     x = x-1;
 }
