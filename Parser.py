@@ -238,14 +238,15 @@ class Parser:
                 expr = self.expr()
                 self.match('SEMI')
                 return ('assign', name, expr)
-            case 'FAST_IN' | 'FAST_DE':  # x++; x--5;
-                op = self.match(self.peek())
-                if self.peek() != 'SEMI':
-                    expr = self.expr()
-                    self.match('SEMI')
-                    return (op, name, expr)
+            case 'FAST_IN' | 'FAST_DE':  # x++; x--;
+                op = self.match(self.peek())[0]
                 self.match('SEMI')
-                return (op, name)
+                return ('assign', name, (op, ('var', name), 1))
+            case 'FAST_ADD' | 'FAST_SUB':  # x += 5; -=
+                op = self.match(self.peek())[0]
+                expr = self.expr()
+                self.match('SEMI')
+                return ('assign', name, (op, ('var', name), expr))
             case _:
                 self.match('SEMI')
                 return ('expr_stmt', ('var', name))

@@ -72,13 +72,6 @@ class Environment:
             if op == '!':
                 return not self.evaluate(node[1])
 
-            if op in ('++', '--'):
-                inc = node[2] if len(node) > 2 else 1
-                val, typ = self.vars[node[1]]
-                self.vars[node[1]] = (
-                    val + inc if op == '++' else val - inc, typ)
-                return None
-
             if op == 'expr_stmt':
                 return self.evaluate(node[1])
 

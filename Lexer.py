@@ -1,6 +1,8 @@
 import re
 
 # === Lexer ===
+
+
 def tokenize(code):
     token_specification = [
         # Comments (must come before other operators)
@@ -18,7 +20,7 @@ def tokenize(code):
         ('TYPE_FLOAT', r'float'),
         ('TYPE_STRING', r'string'),
         ('TYPE_BOOL', r'bool'),
-        ('NUMBER',   r'\d+(\.\d+)?'), # Integer or decimal
+        ('NUMBER',   r'\d+(\.\d+)?'),  # Integer or decimal
         ('ID',       r'[a-zA-Z_]\w*'),
         ('STRING',   r'"[^"]*"'),
 
@@ -35,9 +37,11 @@ def tokenize(code):
         ('OR',      r'\|\|'),
         ('NOT',     r'!'),
 
-        #Fast Inrement
+        # Fast Inrement
         ('FAST_IN', r'\+\+'),
         ('FAST_DE', r'--'),
+        ('FAST_ADD', r'\+='),
+        ('FAST_SUB', r'-='),
 
         # Assignment and arithmetic
         ('ASSIGN',   r'='),
@@ -55,7 +59,8 @@ def tokenize(code):
         ('SEMI',   r';'),
         ('SKIP',     r'[ \t]+'),       # Skip spaces
     ]
-    tok_regex = '|'.join(f'(?P<{name}>{regex})' for name, regex in token_specification)
+    tok_regex = '|'.join(
+        f'(?P<{name}>{regex})' for name, regex in token_specification)
     tokens = []
     for mo in re.finditer(tok_regex, code):
         kind = mo.lastgroup
