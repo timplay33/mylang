@@ -20,8 +20,8 @@ setup(
     description='A simple, strongly-typed programming language with modern architecture',
     long_description=read_readme(),
     long_description_content_type='text/markdown',
-    author='MyLang Team',
-    author_email='team@mylang.dev',
+    author='Tim Heidler',
+    author_email='info@theidler.de',
     url='https://github.com/timplay33/mylang',
     packages=find_packages('src'),
     package_dir={'': 'src'},
@@ -29,7 +29,6 @@ setup(
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
