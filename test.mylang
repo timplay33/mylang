@@ -1,18 +1,55 @@
 /* 
-Function to 
-calculate factorial
+MyLang Test Program
+This file demonstrates the language features
 */
 
+// Test basic variables
+int x = 10;
+string message = "Hello, MyLang!";
+bool flag = true;
+
+print("Basic Variables");
+print("x =", x);
+print("message =", message);
+print("flag =", flag);
+
+// Test arithmetic
+print("Arithmetic");
+int sum = x + 5;
+print("x + 5 =", sum);
+
+// Test string operations
+string greeting = "Hello" + " " + "World";
+print("String concatenation:", greeting);
+
+// Test function definition
 func int factorial(int n) {
-    int result = 1;
-    int i = 1;
-    while (i <= n) {
-        result = result * i;
-        i++;
+    if (n <= 1) {
+        return 1;
+    } else {
+        return n * factorial(n - 1);
     }
-    return result;
 }
 
-// Main program
-int number = 5;
-print("Factorial of", number, "is", factorial(number));
+print("Functions");
+int factResult = factorial(6);
+print("6! =", factResult);
+
+// Test while loop
+print("Loops");
+int counter = 1;
+while (counter <= 3) {
+    print("Counter:", counter);
+    counter++;
+}
+
+// Test conditionals
+print("Conditionals");
+int age = 25;
+if (age >= 18) {
+    print("You are an adult");
+} else {
+    print("You are a minor");
+}
+
+print("Program Complete");

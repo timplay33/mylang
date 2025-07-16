@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """
-Example of extending the language with new built-in functions
-This demonstrates how easy it is to add new functionality
+Example of extending MyLang with new built-in functions
+This demonstrates how easy it is to add new functionality to the language.
+
+Usage: python extension_example.py
 """
 
 from Builtins import BuiltinFunction, BuiltinRegistry
@@ -76,29 +78,76 @@ class AbsFunction(BuiltinFunction):
         return len(args) == 1
 
 
-def register_math_functions(registry: BuiltinRegistry):
-    """Register math-related built-in functions"""
-    math_functions = [
+def create_extended_environment():
+    """Create an environment with extended built-in functions"""
+    from Evaluator import Environment
+
+    env = Environment()
+
+    # Register our extended functions
+    extended_functions = [
         LengthFunction(),
         MaxFunction(),
         MinFunction(),
         AbsFunction(),
     ]
 
-    for func in math_functions:
-        registry.register(func)
-        print(f"Registered function: {func.name()}")
+    for func in extended_functions:
+        env.evaluator.builtins.register(func)
+        print(f"✓ Registered function: {func.name()}")
+
+    return env
 
 
-def test_extended_functions():
-    """Test the new extended functions"""
-    from Lexer import tokenize
-    from Parser import Parser
-    from Evaluator import Environment
+def demo_extended_functions():
+    """Demonstrate the extended functions"""
+    print("MyLang Extended Functions Demo")
+    print("=" * 40)
 
-    # Register our new functions
-    env = Environment()
-    register_math_functions(env.evaluator.builtins)
+    env = create_extended_environment()
+
+    test_code = '''
+    string text = "Hello World";
+    int text_length = len(text);
+    print("Length of text:", text_length);
+    
+    int a = 10;
+    int b = 20;
+    int c = 5;
+    
+    int maximum = max(a, b, c);
+    int minimum = min(a, b, c);
+    int absolute = abs(-15);
+    
+    print("Max of", a, b, c, "is", maximum);
+    print("Min of", a, b, c, "is", minimum);
+    print("Abs(-15) =", absolute);
+    
+    int num_digits = len(12345);
+    print("Digits in 12345:", num_digits);
+    '''
+
+    print("Executing extended functions test...")
+    print("-" * 40)
+
+    try:
+        from Lexer import tokenize
+        from Parser import Parser
+
+        tokens = tokenize(test_code)
+        parser = Parser(tokens)
+        ast = parser.parse()
+        env.evaluate(ast)
+
+        print("-" * 40)
+        print("✓ All extended functions work correctly!")
+
+    except Exception as e:
+        print(f"✗ Error: {e}")
+
+
+if __name__ == "__main__":
+    demo_extended_functions()
 
     test_code = '''
     string text = "Hello World";
@@ -131,10 +180,13 @@ def test_extended_functions():
         parser = Parser(tokens)
         ast = parser.parse()
         env.evaluate(ast)
-        print("\n✓ All extended functions work correctly!")
+
+        print("-" * 40)
+        print("✓ All extended functions work correctly!")
+
     except Exception as e:
         print(f"✗ Error: {e}")
 
 
 if __name__ == "__main__":
-    test_extended_functions()
+    demo_extended_functions()
