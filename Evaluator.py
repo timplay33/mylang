@@ -83,7 +83,7 @@ class Environment:
                 if type_str == 'int' and not isinstance(value, (int, type(None))):
                     raise RuntimeError(
                         f"Expected int, got {type(value).__name__}")
-                if type_str == 'float' and not isinstance(value, (float, int, type(None))):
+                if type_str == 'float' and not isinstance(value, (float, type(None))):
                     raise RuntimeError(
                         f"Expected float, got {type(value).__name__}")
                 if type_str == 'string' and not isinstance(value, (str, type(None))):
