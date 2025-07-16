@@ -6,14 +6,15 @@ This demonstrates how easy it is to add new functionality to the language.
 Usage: python extension_demo.py
 """
 
-from typing import Any, List
-from mylang.error import RuntimeError
-from mylang.builtins import BuiltinFunction, BuiltinRegistry
 import sys
 import os
 
 # Add parent src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+
+from mylang.builtins import BuiltinFunction, BuiltinRegistry
+from mylang.error import RuntimeError
+from typing import Any, List
 
 
 class LengthFunction(BuiltinFunction):
@@ -86,9 +87,9 @@ class AbsFunction(BuiltinFunction):
 def create_extended_environment():
     """Create an environment with extended built-in functions"""
     from mylang import Environment
-
+    
     env = Environment()
-
+    
     # Register our extended functions
     extended_functions = [
         LengthFunction(),
@@ -96,11 +97,11 @@ def create_extended_environment():
         MinFunction(),
         AbsFunction(),
     ]
-
+    
     for func in extended_functions:
         env.evaluator.builtins.register(func)
         print(f"✓ Registered function: {func.name()}")
-
+    
     return env
 
 
@@ -134,10 +135,10 @@ def demo_extended_functions():
 
     print("Executing extended functions test...")
     print("-" * 40)
-
+    
     try:
         from mylang import tokenize, Parser
-
+        
         tokens = tokenize(test_code)
         parser = Parser(tokens)
         ast = parser.parse()

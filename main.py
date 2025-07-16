@@ -5,7 +5,6 @@ Usage: python main.py [file.mylang]
        python -m mylang [file.mylang]
 """
 
-from mylang import tokenize, Parser, Environment, LanguageError
 import sys
 import os
 from pathlib import Path
@@ -13,6 +12,7 @@ from pathlib import Path
 # Add src to path so we can import mylang
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
+from mylang import tokenize, Parser, Environment, LanguageError
 
 def run(code, env, filename=None):
     """Execute MyLang code with improved error handling"""
