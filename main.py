@@ -7,7 +7,6 @@ Usage: python main.py [file.mylang]
 
 import sys
 import os
-from pathlib import Path
 
 # Add src to path so we can import mylang
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
@@ -58,10 +57,18 @@ def _print_debug_info(tokens, ast, env, filename=None):
 
     if ast:
         print('\033[91mAST:\033[0m')
-        for i, node in enumerate(ast[:10]):  # Show first 10 AST nodes
-            print(f"  {i}: {repr(node)}")
-        if len(ast) > 10:
-            print(f"  ... and {len(ast) - 10} more nodes")
+        if hasattr(ast, 'statements'):
+            # Handle Program AST node
+            for i, node in enumerate(ast.statements[:10]):  # Show first 10 AST nodes
+                print(f"  {i}: {repr(node)}")
+            if len(ast.statements) > 10:
+                print(f"  ... and {len(ast.statements) - 10} more nodes")
+        else:
+            # Handle legacy list-based AST
+            for i, node in enumerate(ast[:10]):  # Show first 10 AST nodes
+                print(f"  {i}: {repr(node)}")
+            if len(ast) > 10:
+                print(f"  ... and {len(ast) - 10} more nodes")
 
     if hasattr(env, 'vars') and env.vars:
         print(f'\033[93mGlobal Variables: {env.vars}\033[0m')

@@ -11,8 +11,8 @@ from .lexer import tokenize
 from .parser import Parser
 from .evaluator import Environment, Evaluator
 from .error import LanguageError, SyntaxError, TypeError, RuntimeError
-from .ast import *
 from .builtins import BuiltinRegistry
+from .tokens import TokenType
 
 __all__ = [
     'tokenize',
@@ -23,5 +23,6 @@ __all__ = [
     'SyntaxError',
     'TypeError',
     'RuntimeError',
-    'BuiltinRegistry'
+    'BuiltinRegistry',
+    'TokenType'
 ]

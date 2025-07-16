@@ -1,7 +1,8 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 from .ast import *
 from .error import *
 from .builtins import BuiltinRegistry
+from .tokens import TokenType
 
 
 class Scope:
@@ -140,6 +141,30 @@ class Evaluator:
             raise EvaluationError(f"No evaluator for {type(node).__name__}")
         return method(node)
 
+    def _token_to_operator(self, token_type: TokenType) -> str:
+        """Convert TokenType to string operator for evaluation"""
+        mapping = {
+            TokenType.PLUS: '+',
+            TokenType.MINUS: '-',
+            TokenType.MULTIPLY: '*',
+            TokenType.DIVIDE: '/',
+            TokenType.EQUAL: '==',
+            TokenType.NOT_EQUAL: '!=',
+            TokenType.LESS_THAN: '<',
+            TokenType.GREATER_THAN: '>',
+            TokenType.LESS_EQUAL: '<=',
+            TokenType.GREATER_EQUAL: '>=',
+            TokenType.AND: '&&',
+            TokenType.OR: '||',
+            TokenType.NOT: '!',
+            # Fast operations are handled specially
+            TokenType.FAST_INCREMENT: '+',
+            TokenType.FAST_DECREMENT: '-',
+            TokenType.FAST_ADD_ASSIGN: '+',
+            TokenType.FAST_SUB_ASSIGN: '-',
+        }
+        return mapping.get(token_type, str(token_type))
+
     # AST Node Evaluators
     def evaluate_Program(self, node: Program) -> Any:
         """Evaluate a program (list of statements)"""
@@ -161,7 +186,7 @@ class Evaluator:
         """Evaluate a binary operation"""
         left = self.evaluate(node.left)
         right = self.evaluate(node.right)
-        op = node.operator
+        op = self._token_to_operator(node.operator) if isinstance(node.operator, TokenType) else node.operator
 
         # Arithmetic operators
         if op in ('+', '-', '*', '/'):
@@ -202,12 +227,12 @@ class Evaluator:
             }
             return operations[op](left, right)
 
-        raise EvaluationError(f"Unknown binary operator: {op}")
+        raise EvaluationError(f"Unknown binary operator: {op}")  # Changed to show converted op
 
     def evaluate_UnaryOp(self, node: UnaryOp) -> Any:
         """Evaluate a unary operation"""
         operand = self.evaluate(node.operand)
-        op = node.operator
+        op = self._token_to_operator(node.operator) if isinstance(node.operator, TokenType) else node.operator
 
         if op == '!':
             return not operand
@@ -240,14 +265,26 @@ class Evaluator:
 
         raise UndefinedFunctionError(f"Unknown function: {func_name}")
 
+    def _token_to_type_string(self, token_type: TokenType) -> str:
+        """Convert TokenType to type string"""
+        mapping = {
+            TokenType.INT_TYPE: 'int',
+            TokenType.FLOAT_TYPE: 'float',
+            TokenType.STRING_TYPE: 'string',
+            TokenType.BOOL_TYPE: 'bool',
+        }
+        return mapping.get(token_type, str(token_type))
+
     def evaluate_Declaration(self, node: Declaration) -> Any:
         """Evaluate a variable declaration"""
         value = self.evaluate(node.initializer) if node.initializer else None
+        
+        type_name = self._token_to_type_string(node.type_name) if isinstance(node.type_name, TokenType) else node.type_name
 
         if value is not None:
-            value = self.type_system.convert_to_type(value, node.type_name)
+            value = self.type_system.convert_to_type(value, type_name)
 
-        self.current_scope.define(node.var_name, value, node.type_name)
+        self.current_scope.define(node.var_name, value, type_name)
         return value
 
     def evaluate_Assignment(self, node: Assignment) -> Any:
@@ -293,18 +330,21 @@ class Evaluator:
         # Bind parameters to arguments
         for param, arg_val in zip(params, args):
             param_type, param_name = param
+            param_type_str = self._token_to_type_string(param_type) if isinstance(param_type, TokenType) else param_type
             converted_arg = self.type_system.convert_to_type(
-                arg_val, param_type)
-            self.current_scope.define(param_name, converted_arg, param_type)
+                arg_val, param_type_str)
+            self.current_scope.define(param_name, converted_arg, param_type_str)
 
         try:
             result = self._execute_block(body)
             if return_type:
-                result = self.type_system.convert_to_type(result, return_type)
+                return_type_str = self._token_to_type_string(return_type) if isinstance(return_type, TokenType) else return_type
+                result = self.type_system.convert_to_type(result, return_type_str)
             return result
         except ReturnException as ret:
             if return_type:
-                return self.type_system.convert_to_type(ret.value, return_type)
+                return_type_str = self._token_to_type_string(return_type) if isinstance(return_type, TokenType) else return_type
+                return self.type_system.convert_to_type(ret.value, return_type_str)
             return ret.value
 
     def _execute_block(self, statements):
