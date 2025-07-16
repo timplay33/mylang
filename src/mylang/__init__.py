@@ -4,7 +4,7 @@ A simple, strongly-typed programming language with modern architecture.
 """
 
 __version__ = "1.0.0"
-__author__ = "MyLang Team"
+__author__ = "Tim Heidler"
 
 # Import main components for easy access
 from .lexer import tokenize

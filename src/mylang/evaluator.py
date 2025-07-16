@@ -117,12 +117,8 @@ class Environment:
         return self.evaluator.functions
 
     def evaluate(self, node):
-        """Legacy evaluate method"""
-        return self.evaluator.evaluate_legacy(node)
-
-    def formatVar(self, type_name, value):
-        """Legacy formatVar method"""
-        return self.evaluator.type_system.convert_to_type(value, type_name)
+        """Main evaluate method using new AST classes"""
+        return self.evaluator.evaluate(node)
 
 
 class Evaluator:
@@ -144,152 +140,153 @@ class Evaluator:
             raise EvaluationError(f"No evaluator for {type(node).__name__}")
         return method(node)
 
-    def evaluate_legacy(self, node) -> Any:
-        """Evaluate legacy tuple-based AST nodes for backward compatibility"""
-        if isinstance(node, list):
-            result = None
-            for statement in node:
-                result = self.evaluate_legacy(statement)
-            return result
+    # AST Node Evaluators
+    def evaluate_Program(self, node: Program) -> Any:
+        """Evaluate a program (list of statements)"""
+        result = None
+        for statement in node.statements:
+            result = self.evaluate(statement)
+        return result
 
-        if isinstance(node, (int, float, str, bool, type(None))):
-            return node
+    def evaluate_Literal(self, node: Literal) -> Any:
+        """Evaluate a literal value"""
+        return node.value
 
-        if isinstance(node, tuple):
-            op = node[0]
+    def evaluate_Variable(self, node: Variable) -> Any:
+        """Evaluate a variable reference"""
+        value, _ = self.current_scope.get(node.name)
+        return value
 
-            # Arithmetic operators
-            if op in ('+', '-', '*', '/'):
-                left = self.evaluate_legacy(node[1])
-                right = self.evaluate_legacy(
-                    node[2]) if len(node) > 2 else None
+    def evaluate_BinaryOp(self, node: BinaryOp) -> Any:
+        """Evaluate a binary operation"""
+        left = self.evaluate(node.left)
+        right = self.evaluate(node.right)
+        op = node.operator
 
-                if op == '+':
-                    if not self.type_system.check_binary_op(left, right, op):
-                        raise TypeMismatchError(
-                            f"Type mismatch for '+': {type(left).__name__} and {type(right).__name__}")
-                    return left + right
-                elif op == '-':
-                    if right is not None:
-                        if not self.type_system.check_binary_op(left, right, op):
-                            raise TypeMismatchError(
-                                f"Type mismatch for '-': {type(left).__name__} and {type(right).__name__}")
-                        return left - right
-                    else:
-                        if not isinstance(left, (int, float)):
-                            raise TypeMismatchError(
-                                f"Unsupported operand type for unary '-': {type(left).__name__}")
-                        return -left
-                elif op == '*':
-                    if not self.type_system.check_binary_op(left, right, op):
-                        raise TypeMismatchError(
-                            f"Type mismatch for '*': {type(left).__name__} and {type(right).__name__}")
-                    return left * right
-                elif op == '/':
-                    if not self.type_system.check_binary_op(left, right, op):
-                        raise TypeMismatchError(
-                            f"Type mismatch for '/': {type(left).__name__} and {type(right).__name__}")
-                    if right == 0:
-                        raise EvaluationError("division by zero")
-                    return left // right if isinstance(left, int) and isinstance(right, int) else float(left) / float(right)
+        # Arithmetic operators
+        if op in ('+', '-', '*', '/'):
+            if op == '+':
+                if not self.type_system.check_binary_op(left, right, op):
+                    raise TypeMismatchError(
+                        f"Type mismatch for '+': {type(left).__name__} and {type(right).__name__}")
+                return left + right
+            elif op == '-':
+                if not self.type_system.check_binary_op(left, right, op):
+                    raise TypeMismatchError(
+                        f"Type mismatch for '-': {type(left).__name__} and {type(right).__name__}")
+                return left - right
+            elif op == '*':
+                if not self.type_system.check_binary_op(left, right, op):
+                    raise TypeMismatchError(
+                        f"Type mismatch for '*': {type(left).__name__} and {type(right).__name__}")
+                return left * right
+            elif op == '/':
+                if not self.type_system.check_binary_op(left, right, op):
+                    raise TypeMismatchError(
+                        f"Type mismatch for '/': {type(left).__name__} and {type(right).__name__}")
+                if right == 0:
+                    raise EvaluationError("division by zero")
+                return left // right if isinstance(left, int) and isinstance(right, int) else float(left) / float(right)
 
-            # Logical and comparison operators
-            if op in ('||', '&&', '==', '!=', '<=', '>=', '<', '>'):
-                left = self.evaluate_legacy(node[1])
-                right = self.evaluate_legacy(node[2])
+        # Logical and comparison operators
+        if op in ('||', '&&', '==', '!=', '<=', '>=', '<', '>'):
+            operations = {
+                '||': lambda l, r: l or r,
+                '&&': lambda l, r: l and r,
+                '==': lambda l, r: l == r,
+                '!=': lambda l, r: l != r,
+                '<=': lambda l, r: l <= r,
+                '>=': lambda l, r: l >= r,
+                '<': lambda l, r: l < r,
+                '>': lambda l, r: l > r
+            }
+            return operations[op](left, right)
 
-                operations = {
-                    '||': lambda l, r: l or r,
-                    '&&': lambda l, r: l and r,
-                    '==': lambda l, r: l == r,
-                    '!=': lambda l, r: l != r,
-                    '<=': lambda l, r: l <= r,
-                    '>=': lambda l, r: l >= r,
-                    '<': lambda l, r: l < r,
-                    '>': lambda l, r: l > r
-                }
-                return operations[op](left, right)
+        raise EvaluationError(f"Unknown binary operator: {op}")
 
-            if op == '!':
-                return not self.evaluate_legacy(node[1])
+    def evaluate_UnaryOp(self, node: UnaryOp) -> Any:
+        """Evaluate a unary operation"""
+        operand = self.evaluate(node.operand)
+        op = node.operator
 
-            if op == 'expr_stmt':
-                return self.evaluate_legacy(node[1])
+        if op == '!':
+            return not operand
+        elif op == '-':
+            if not isinstance(operand, (int, float)):
+                raise TypeMismatchError(
+                    f"Unsupported operand type for unary '-': {type(operand).__name__}")
+            return -operand
 
-            if op == 'decl':
-                _, type_str, name, expr = node
-                value = self.evaluate_legacy(expr) if expr else None
+        raise EvaluationError(f"Unknown unary operator: {op}")
 
-                if value is not None:
-                    value = self.type_system.convert_to_type(value, type_str)
+    def evaluate_FunctionCall(self, node: FunctionCall) -> Any:
+        """Evaluate a function call"""
+        func_name = node.name
+        args = [self.evaluate(arg) for arg in node.args]
 
-                self.current_scope.define(name, value, type_str)
-                return value
+        # Check built-in functions first
+        if self.builtins.has_function(func_name):
+            return self.builtins.call(func_name, args)
 
-            if op == 'assign':
-                name = node[1]
-                value = self.evaluate_legacy(node[2])
-                type_name = self.current_scope.get_type(name)
-                value = self.type_system.convert_to_type(value, type_name)
-                self.current_scope.set(name, value)
-                return value
+        # Check user-defined functions
+        if func_name in self.functions:
+            func_params, func_body, func_ret_type = self.functions[func_name]
+            if len(args) != len(func_params):
+                raise EvaluationError(
+                    f"{func_name}() expects {len(func_params)} args, got {len(args)}")
 
-            if op == 'var':
-                name = node[1]
-                value, _ = self.current_scope.get(name)
-                return value
+            # Create new scope for function execution
+            return self.with_new_scope(lambda: self._execute_function(func_params, func_body, func_ret_type, args))()
 
-            if op == 'call':
-                func_name = node[1]
-                args = [self.evaluate_legacy(arg) for arg in node[2]]
+        raise UndefinedFunctionError(f"Unknown function: {func_name}")
 
-                # Check built-in functions first
-                if self.builtins.has_function(func_name):
-                    return self.builtins.call(func_name, args)
+    def evaluate_Declaration(self, node: Declaration) -> Any:
+        """Evaluate a variable declaration"""
+        value = self.evaluate(node.initializer) if node.initializer else None
 
-                # Check user-defined functions
-                if func_name in self.functions:
-                    func_params, func_body, func_ret_type = self.functions[func_name]
-                    if len(args) != len(func_params):
-                        raise EvaluationError(
-                            f"{func_name}() expects {len(func_params)} args, got {len(args)}")
+        if value is not None:
+            value = self.type_system.convert_to_type(value, node.type_name)
 
-                    # Create new scope for function execution
-                    return self.with_new_scope(lambda: self._execute_function(func_params, func_body, func_ret_type, args))()
+        self.current_scope.define(node.var_name, value, node.type_name)
+        return value
 
-                raise UndefinedFunctionError(f"Unknown function: {func_name}")
+    def evaluate_Assignment(self, node: Assignment) -> Any:
+        """Evaluate a variable assignment"""
+        value = self.evaluate(node.value)
+        type_name = self.current_scope.get_type(node.var_name)
+        value = self.type_system.convert_to_type(value, type_name)
+        self.current_scope.set(node.var_name, value)
+        return value
 
-            if op == 'func':
-                name = node[1]
-                params = node[2]
-                body = node[3]
-                return_type = node[4] if len(node) > 4 else None
-                self.functions[name] = (params, body, return_type)
-                return f"<function {name}>"
+    def evaluate_IfStatement(self, node: IfStatement) -> Any:
+        """Evaluate an if statement"""
+        condition = self.evaluate(node.condition)
+        if condition:
+            return self.with_new_scope(lambda: self._execute_block(node.then_branch))()
+        elif node.else_branch:
+            return self.with_new_scope(lambda: self._execute_block(node.else_branch))()
+        return None
 
-            if op == 'return':
-                value = self.evaluate_legacy(
-                    node[1]) if len(node) > 1 else None
-                raise ReturnException(value)
+    def evaluate_WhileStatement(self, node: WhileStatement) -> Any:
+        """Evaluate a while statement"""
+        result = None
+        while self.evaluate(node.condition):
+            result = self.with_new_scope(lambda: self._execute_block(node.body))()
+        return result
 
-            if op == 'if':
-                condition = self.evaluate_legacy(node[1])
-                if condition:
-                    return self.with_new_scope(lambda: self._execute_block(node[2]))()
-                elif len(node) > 3:  # else clause
-                    return self.with_new_scope(lambda: self._execute_block(node[3]))()
-                return None
+    def evaluate_FunctionDeclaration(self, node: FunctionDeclaration) -> Any:
+        """Evaluate a function declaration"""
+        self.functions[node.name] = (node.params, node.body, node.return_type)
+        return f"<function {node.name}>"
 
-            if op == 'while':
-                condition = node[1]
-                body = node[2]
-                result = None
-                while self.evaluate_legacy(condition):
-                    result = self.with_new_scope(
-                        lambda: self._execute_block(body))()
-                return result
+    def evaluate_ReturnStatement(self, node: ReturnStatement) -> Any:
+        """Evaluate a return statement"""
+        value = self.evaluate(node.value) if node.value else None
+        raise ReturnException(value)
 
-        raise EvaluationError(f"Invalid AST node: {node}")
+    def evaluate_ExpressionStatement(self, node: ExpressionStatement) -> Any:
+        """Evaluate an expression statement"""
+        return self.evaluate(node.expression)
 
     def _execute_function(self, params, body, return_type, args):
         """Execute a function with given parameters and arguments"""
@@ -314,7 +311,7 @@ class Evaluator:
         """Execute a block of statements"""
         result = None
         for stmt in statements:
-            result = self.evaluate_legacy(stmt)
+            result = self.evaluate(stmt)
         return result
 
     def with_new_scope(self, func):

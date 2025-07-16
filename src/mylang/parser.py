@@ -1,3 +1,5 @@
+from .ast import *
+
 class Parser:
     def __init__(self, tokens):
         self.tokens = tokens
@@ -27,7 +29,7 @@ class Parser:
             stmt = self.statement()
             if stmt is not None:
                 statements.append(stmt)
-        return statements
+        return Program(statements)
 
     def statement(self):
         match self.peek():
@@ -37,7 +39,7 @@ class Parser:
                 self.match('RETURN')
                 expr = self.expr()
                 self.match('SEMI')
-                return ('return', expr)
+                return ReturnStatement(expr)
             case 'TYPE_INT' | 'TYPE_FLOAT' | 'TYPE_STRING' | 'TYPE_BOOL':
                 return self.variable_declaration()
             case 'IF':
@@ -51,7 +53,7 @@ class Parser:
             case _:
                 expr = self.expr()
                 self.match('SEMI')
-                return ('expr_stmt', expr)
+                return ExpressionStatement(expr)
 
     # expr -> comparison
     def expr(self):
@@ -63,7 +65,7 @@ class Parser:
         while self.peek() in ('OR',):
             op = self.match(self.peek())
             right = self.logical_and()
-            node = (op, node, right)
+            node = BinaryOp(node, op, right)
         return node
 
     # logical_and -> equality (&& equality)*
@@ -72,7 +74,7 @@ class Parser:
         while self.peek() in ('AND',):
             op = self.match(self.peek())
             right = self.equality()
-            node = (op, node, right)
+            node = BinaryOp(node, op, right)
         return node
 
     # equality -> comparison ((==|!=) comparison)*
@@ -81,7 +83,7 @@ class Parser:
         while self.peek() in ('EQUAL', 'NOT_EQUAL'):
             op = self.match(self.peek())
             right = self.comparison()
-            node = (op, node, right)
+            node = BinaryOp(node, op, right)
         return node
 
     # comparison -> addition ((<|>|<=|>=) addition)*
@@ -90,7 +92,7 @@ class Parser:
         while self.peek() in ('LESS', 'GREATER', 'LESS_EQUAL', 'GREATER_EQUAL'):
             op = self.match(self.peek())
             right = self.addition()
-            node = (op, node, right)
+            node = BinaryOp(node, op, right)
         return node
 
     # addition -> term ((+|-) term)*
@@ -99,7 +101,7 @@ class Parser:
         while self.peek() in ('ADD', 'SUB'):
             op = self.match(self.peek())
             right = self.term()
-            node = (op, node, right)
+            node = BinaryOp(node, op, right)
         return node
 
     # term -> factor ((*|/) factor)*
@@ -108,14 +110,14 @@ class Parser:
         while self.peek() in ('MUL', 'DIV'):
             op = self.match(self.peek())
             right = self.unary()
-            node = (op, node, right)
+            node = BinaryOp(node, op, right)
         return node
 
     def unary(self):
         if self.peek() in ('NOT', 'SUB'):
             op = self.match(self.peek())
             node = self.unary()  # Recursive call for nested unary operators
-            return (op, node)
+            return UnaryOp(op, node)
         else:
             return self.factor()
 
@@ -123,11 +125,14 @@ class Parser:
     def factor(self):
         match self.peek():
             case 'NUMBER':
-                return self.match('NUMBER')
+                value = self.match('NUMBER')
+                return Literal(value)
             case 'BOOL':
-                return self.match('BOOL')
+                value = self.match('BOOL')
+                return Literal(value)
             case 'STRING':
-                return self.match('STRING')
+                value = self.match('STRING')
+                return Literal(value)
             case 'ID':
                 name = self.match('ID')
                 if self.peek() == 'LPAREN':  # Function Call
@@ -139,9 +144,9 @@ class Parser:
                             self.match('COMMA')
                             args.append(self.expr())
                     self.match('RPAREN')
-                    return ('call', name, args)
+                    return FunctionCall(name, args)
                 else:
-                    return ('var', name)
+                    return Variable(name)
             case 'LPAREN':
                 self.match('LPAREN')
                 node = self.expr()
@@ -158,7 +163,7 @@ class Parser:
             self.match('ASSIGN')
             expr = self.expr()
         self.match('SEMI')
-        return ('decl', type_token, name, expr)
+        return Declaration(type_token, name, expr)
 
     def function_declaration(self):
         self.match('FUNC')
@@ -179,7 +184,7 @@ class Parser:
             if stmt is not None:
                 body.append(stmt)
         self.match('RBRACE')
-        return ('func', name, params, body, ret_type)
+        return FunctionDeclaration(name, params, body, ret_type)
 
     def if_statement(self):
         self.match('IF')
@@ -202,8 +207,8 @@ class Parser:
                 if stmt is not None:
                     else_body.append(stmt)
             self.match('RBRACE')
-            return ('if', condition, body, else_body)
-        return ('if', condition, body)
+            return IfStatement(condition, body, else_body)
+        return IfStatement(condition, body)
 
     def while_statement(self):
         self.match('WHILE')
@@ -217,7 +222,7 @@ class Parser:
             if stmt is not None:
                 body.append(stmt)
         self.match('RBRACE')
-        return ('while', condition, body)
+        return WhileStatement(condition, body)
 
     def assignment_or_expression_statement(self):
         name = self.match('ID')
@@ -232,21 +237,21 @@ class Parser:
                         args.append(self.expr())
                 self.match('RPAREN')
                 self.match('SEMI')
-                return ('expr_stmt', ('call', name, args))
+                return ExpressionStatement(FunctionCall(name, args))
             case 'ASSIGN':
                 self.match('ASSIGN')
                 expr = self.expr()
                 self.match('SEMI')
-                return ('assign', name, expr)
+                return Assignment(name, expr)
             case 'FAST_IN' | 'FAST_DE':  # x++; x--;
                 op = self.match(self.peek())[0]
                 self.match('SEMI')
-                return ('assign', name, (op, ('var', name), 1))
+                return Assignment(name, BinaryOp(Variable(name), op, Literal(1)))
             case 'FAST_ADD' | 'FAST_SUB':  # x += 5; -=
                 op = self.match(self.peek())[0]
                 expr = self.expr()
                 self.match('SEMI')
-                return ('assign', name, (op, ('var', name), expr))
+                return Assignment(name, BinaryOp(Variable(name), op, expr))
             case _:
                 self.match('SEMI')
-                return ('expr_stmt', ('var', name))
+                return ExpressionStatement(Variable(name))

@@ -2,11 +2,11 @@
 
 ## Overview
 
-This document summarizes the groundbreaking changes made to improve the readability, consistency, and extendability of the MyLang language implementation.
+This document summarizes the groundbreaking changes made to improve the readability, consistency, and extendability of the MyLang language implementation. **The refactoring has been completed successfully!**
 
 ## Major Architectural Changes
 
-### 1. AST Node Classes (AST.py)
+### 1. AST Node Classes (ast.py) ✅ COMPLETED
 
 **Before**: Tuple-based AST representation
 
