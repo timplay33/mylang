@@ -31,6 +31,18 @@ class Environment:
                 case '<': return self.evaluate(node[1]) < self.evaluate(node[2])
                 case '>': return self.evaluate(node[1]) > self.evaluate(node[2])
                 case '!': return not self.evaluate(node[1])
+                case '++': 
+                    inc = 1
+                    if (len(node) > 2):
+                        inc = node[2]
+                    self.vars[node[1]] = (self.vars[node[1]][0]+inc,self.vars[node[1]][1])
+                    return None
+                case '--': 
+                    inc = 1
+                    if (len(node) > 2):
+                        inc = node[2]
+                    self.vars[node[1]] = (self.vars[node[1]][0]-inc,self.vars[node[1]][1])
+                    return None
                 case 'expr_stmt':
                     return self.evaluate(node[1])
                 case 'decl':

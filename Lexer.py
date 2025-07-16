@@ -30,6 +30,10 @@ def tokenize(code):
         ('OR',      r'\|\|'),
         ('NOT',     r'!'),
 
+        #Fast Inrement
+        ('FAST_IN', r'\+\+'),
+        ('FAST_DE', r'--'),
+
         # Assignment and arithmetic
         ('ASSIGN',   r'='),
         ('ADD',      r'\+'),

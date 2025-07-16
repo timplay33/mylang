@@ -128,7 +128,7 @@ class Parser:
                 return self.match('STRING')
             case 'ID':
                 name = self.match('ID')
-                if self.peek() == 'LPAREN':
+                if self.peek() == 'LPAREN': #Function Call
                     self.match('LPAREN')
                     args = []
                     if self.peek() != 'RPAREN':
@@ -232,6 +232,14 @@ class Parser:
                 expr = self.expr()
                 self.match('SEMI')
                 return ('assign', name, expr)
+            case 'FAST_IN' | 'FAST_DE': # x++; x--5;
+                    op = self.match(self.peek())
+                    if self.peek() != 'SEMI':
+                        expr = self.expr()
+                        self.match('SEMI')
+                        return (op, name, expr)
+                    self.match('SEMI')
+                    return (op, name)
             case _:
                 self.match('SEMI')
                 return ('expr_stmt', ('var', name))
