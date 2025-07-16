@@ -3,10 +3,7 @@ Function to
 calculate factorial
 */
 
-print(toString(toInt(1.0/1)) + "tim");
-
-/*
-func factorial(int n) {
+func int factorial(int n) {
     int result = 1;
     int i = 1;
     while (i <= n) {
@@ -19,4 +16,3 @@ func factorial(int n) {
 // Main program
 int number = 5;
 print("Factorial of", number, "is", factorial(number));
-*/

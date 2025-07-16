@@ -16,8 +16,10 @@ class Parser:
             val = self.tokens[self.pos][1]
             self.advance()
             return val
-        token = self.tokens[self.pos] if self.pos < len(self.tokens) else ('EOF', '')
-        raise SyntaxError(f'expected: {expected} but got: {token[0]} ({token[1]!r}) at position {self.pos}')
+        token = self.tokens[self.pos] if self.pos < len(
+            self.tokens) else ('EOF', '')
+        raise SyntaxError(
+            f'expected: {expected} but got: {token[0]} ({token[1]!r}) at position {self.pos}')
 
     def parse(self):
         statements = []
@@ -26,7 +28,7 @@ class Parser:
             if stmt is not None:
                 statements.append(stmt)
         return statements
-    
+
     def statement(self):
         match self.peek():
             case 'FUNC':
@@ -50,8 +52,8 @@ class Parser:
                 expr = self.expr()
                 self.match('SEMI')
                 return ('expr_stmt', expr)
-            
-    # expr -> comparison    
+
+    # expr -> comparison
     def expr(self):
         return self.logical_or()
 
@@ -63,7 +65,7 @@ class Parser:
             right = self.logical_and()
             node = (op, node, right)
         return node
-    
+
     # logical_and -> equality (&& equality)*
     def logical_and(self):
         node = self.equality()
@@ -72,7 +74,7 @@ class Parser:
             right = self.equality()
             node = (op, node, right)
         return node
-    
+
     # equality -> comparison ((==|!=) comparison)*
     def equality(self):
         node = self.comparison()
@@ -81,7 +83,7 @@ class Parser:
             right = self.comparison()
             node = (op, node, right)
         return node
-    
+
     # comparison -> addition ((<|>|<=|>=) addition)*
     def comparison(self):
         node = self.addition()
@@ -108,7 +110,7 @@ class Parser:
             right = self.unary()
             node = (op, node, right)
         return node
-    
+
     def unary(self):
         if self.peek() in ('NOT', 'SUB'):
             op = self.match(self.peek())
@@ -128,7 +130,7 @@ class Parser:
                 return self.match('STRING')
             case 'ID':
                 name = self.match('ID')
-                if self.peek() == 'LPAREN': #Function Call
+                if self.peek() == 'LPAREN':  # Function Call
                     self.match('LPAREN')
                     args = []
                     if self.peek() != 'RPAREN':
@@ -147,7 +149,7 @@ class Parser:
                 return node
             case _:
                 raise SyntaxError(f"Unexpected token: {self.tokens[self.pos]}")
-            
+
     def variable_declaration(self):
         type_token = self.match(self.peek())
         name = self.match('ID')
@@ -157,9 +159,10 @@ class Parser:
             expr = self.expr()
         self.match('SEMI')
         return ('decl', type_token, name, expr)
-    
+
     def function_declaration(self):
         self.match('FUNC')
+        ret_type = self.match(self.peek())
         name = self.match('ID')
         self.match('LPAREN')
         params = []
@@ -176,7 +179,8 @@ class Parser:
             if stmt is not None:
                 body.append(stmt)
         self.match('RBRACE')
-        return ('func', name, params, body)
+        return ('func', name, params, body, ret_type)
+
     def if_statement(self):
         self.match('IF')
         self.match('LPAREN')
@@ -200,6 +204,7 @@ class Parser:
             self.match('RBRACE')
             return ('if', condition, body, else_body)
         return ('if', condition, body)
+
     def while_statement(self):
         self.match('WHILE')
         self.match('LPAREN')
@@ -213,6 +218,7 @@ class Parser:
                 body.append(stmt)
         self.match('RBRACE')
         return ('while', condition, body)
+
     def assignment_or_expression_statement(self):
         name = self.match('ID')
         match self.peek():
@@ -232,14 +238,14 @@ class Parser:
                 expr = self.expr()
                 self.match('SEMI')
                 return ('assign', name, expr)
-            case 'FAST_IN' | 'FAST_DE': # x++; x--5;
-                    op = self.match(self.peek())
-                    if self.peek() != 'SEMI':
-                        expr = self.expr()
-                        self.match('SEMI')
-                        return (op, name, expr)
+            case 'FAST_IN' | 'FAST_DE':  # x++; x--5;
+                op = self.match(self.peek())
+                if self.peek() != 'SEMI':
+                    expr = self.expr()
                     self.match('SEMI')
-                    return (op, name)
+                    return (op, name, expr)
+                self.match('SEMI')
+                return (op, name)
             case _:
                 self.match('SEMI')
                 return ('expr_stmt', ('var', name))

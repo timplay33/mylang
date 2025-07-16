@@ -130,7 +130,7 @@ class Environment:
                 if func_name == 'toFloat':
                     return float(args[0])
                 if func_name in self.funcs:
-                    func_params, func_body = self.funcs[func_name]
+                    func_params, func_body, func_ret_type = self.funcs[func_name]
                     if len(args) != len(func_params):
                         raise TypeError(
                             f"{func_name}() expects {len(func_params)} args, got {len(args)}")
@@ -139,14 +139,18 @@ class Environment:
                     local.vars = self.vars.copy()
                     for param, arg_val in zip(func_params, args):
                         local.vars[param[1]] = (arg_val, param[0])
-                    return local.evaluate(func_body)
+                    result = local.evaluate(func_body)
+                    if func_ret_type:
+                        result = self.formatVar(func_ret_type, result)
+                    return result
                 raise NameError(f"Unknown function: {func_name}")
 
             if op == 'func':
                 name = node[1]
                 params = node[2]
                 body = node[3]
-                self.funcs[name] = (params, body)
+                return_type = node[4] if len(node) > 4 else None
+                self.funcs[name] = (params, body, return_type)
                 return f"<function {name}>"
 
             if op == 'return':
