@@ -101,25 +101,7 @@ class ReturnException(Exception):
         self.value = value
 
 
-class Environment:
-    """Legacy environment class for backward compatibility"""
 
-    def __init__(self):
-        self.evaluator = Evaluator()
-
-    @property
-    def vars(self):
-        """Legacy vars property"""
-        return {name: (value, type_name) for name, (value, type_name) in self.evaluator.current_scope.variables.items()}
-
-    @property
-    def funcs(self):
-        """Legacy funcs property"""
-        return self.evaluator.functions
-
-    def evaluate(self, node):
-        """Main evaluate method using new AST classes"""
-        return self.evaluator.evaluate(node)
 
 
 class Evaluator:

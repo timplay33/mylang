@@ -11,7 +11,7 @@ import os
 # Add src to path so we can import mylang
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-from mylang import tokenize, Parser, Environment, LanguageError
+from mylang import tokenize, Parser, Evaluator, LanguageError
 
 def run(code, env, filename=None):
     """Execute MyLang code with improved error handling"""
@@ -57,24 +57,18 @@ def _print_debug_info(tokens, ast, env, filename=None):
 
     if ast:
         print('\033[91mAST:\033[0m')
-        if hasattr(ast, 'statements'):
-            # Handle Program AST node
-            for i, node in enumerate(ast.statements[:10]):  # Show first 10 AST nodes
-                print(f"  {i}: {repr(node)}")
-            if len(ast.statements) > 10:
-                print(f"  ... and {len(ast.statements) - 10} more nodes")
-        else:
-            # Handle legacy list-based AST
-            for i, node in enumerate(ast[:10]):  # Show first 10 AST nodes
-                print(f"  {i}: {repr(node)}")
-            if len(ast) > 10:
-                print(f"  ... and {len(ast) - 10} more nodes")
+        # Handle Program AST node
+        for i, node in enumerate(ast.statements[:10]):  # Show first 10 AST nodes
+            print(f"  {i}: {repr(node)}")
+        if len(ast.statements) > 10:
+            print(f"  ... and {len(ast.statements) - 10} more nodes")
 
-    if hasattr(env, 'vars') and env.vars:
-        print(f'\033[93mGlobal Variables: {env.vars}\033[0m')
+    if env.global_scope.variables:
+        vars_dict = {name: (value, type_name) for name, (value, type_name) in env.global_scope.variables.items()}
+        print(f'\033[93mGlobal Variables: {vars_dict}\033[0m')
 
-    if hasattr(env, 'funcs') and env.funcs:
-        print(f'\033[93mGlobal Functions: {list(env.funcs.keys())}\033[0m')
+    if env.functions:
+        print(f'\033[93mGlobal Functions: {list(env.functions.keys())}\033[0m')
 
 
 def console_mode():
@@ -83,7 +77,7 @@ def console_mode():
     print("Type 'exit' to quit")
     print("=" * 40)
 
-    env = Environment()
+    env = Evaluator()
 
     while True:
         try:
@@ -122,7 +116,7 @@ def file_mode():
     if not filepath.endswith('.mylang'):
         print("Warning: File doesn't have .mylang extension")
 
-    env = Environment()
+    env = Evaluator()
 
     try:
         with open(filepath, 'r', encoding='utf-8') as file:

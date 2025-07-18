@@ -170,13 +170,18 @@ TOKEN_PATTERNS = [
 - Better tooling support
 - Consistent token naming
 
-## Backward Compatibility
+## Backward Compatibility Removal
 
-The refactor maintains full backward compatibility through:
+All backward compatibility code has been removed in the final refactor:
 
-1. **Legacy Environment Class**: Wraps the new evaluator
-2. **Legacy AST Support**: `evaluate_legacy()` method handles tuple-based AST
-3. **Existing Parser**: Works unchanged with new system
+1. **Legacy Environment Class**: ~~Removed~~ - Use `Evaluator` directly
+2. **Legacy AST Support**: ~~Removed~~ - Only new AST classes supported
+3. **Import Changes**: `Environment` removed from public API
+
+**Breaking Changes:**
+- Import `Evaluator` instead of `Environment`
+- Access variables via `evaluator.global_scope.get(name)` instead of `env.vars[name]`
+- Access functions via `evaluator.functions` instead of `env.funcs`
 
 ## Performance Improvements
 
@@ -255,4 +260,4 @@ The refactoring transforms MyLang from a proof-of-concept into a production-read
 - **Better Performance**: Optimized execution
 - **Developer Experience**: Better tooling support
 
-The changes maintain 100% backward compatibility while providing a solid foundation for future development.
+The final refactor removes all backward compatibility code, resulting in a cleaner, more maintainable codebase focused on the new architecture.

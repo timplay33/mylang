@@ -9,7 +9,7 @@ __author__ = "Tim Heidler"
 # Import main components for easy access
 from .lexer import tokenize
 from .parser import Parser
-from .evaluator import Environment, Evaluator
+from .evaluator import Evaluator
 from .error import LanguageError, SyntaxError, TypeError, RuntimeError
 from .builtins import BuiltinRegistry
 from .tokens import TokenType
@@ -17,7 +17,6 @@ from .tokens import TokenType
 __all__ = [
     'tokenize',
     'Parser',
-    'Environment',
     'Evaluator',
     'LanguageError',
     'SyntaxError',

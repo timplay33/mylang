@@ -10,7 +10,7 @@ import os
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from mylang import tokenize, Parser, Environment
+from mylang import tokenize, Parser, Evaluator
 
 
 class TestMyLang(unittest.TestCase):
@@ -18,7 +18,7 @@ class TestMyLang(unittest.TestCase):
     
     def setUp(self):
         """Set up test environment"""
-        self.env = Environment()
+        self.env = Evaluator()
     
     def test_basic_arithmetic(self):
         """Test basic arithmetic operations"""
@@ -42,9 +42,13 @@ class TestMyLang(unittest.TestCase):
         self.env.evaluate(ast)
         
         # Check variables are stored correctly
-        self.assertEqual(self.env.vars['x'][0], 42)
-        self.assertEqual(self.env.vars['msg'][0], "Hello")
-        self.assertEqual(self.env.vars['flag'][0], True)
+        x_value, x_type = self.env.global_scope.get('x')
+        msg_value, msg_type = self.env.global_scope.get('msg')
+        flag_value, flag_type = self.env.global_scope.get('flag')
+        
+        self.assertEqual(x_value, 42)
+        self.assertEqual(msg_value, "Hello")
+        self.assertEqual(flag_value, True)
     
     def test_function_definition(self):
         """Test function definition and calling"""
@@ -60,7 +64,8 @@ class TestMyLang(unittest.TestCase):
         self.env.evaluate(ast)
         
         # Check function was defined and called correctly
-        self.assertEqual(self.env.vars['result'][0], 8)
+        result_value, result_type = self.env.global_scope.get('result')
+        self.assertEqual(result_value, 8)
     
     def test_control_flow(self):
         """Test if/else and while loops"""
@@ -77,7 +82,8 @@ class TestMyLang(unittest.TestCase):
         ast = parser.parse()
         self.env.evaluate(ast)
         
-        self.assertEqual(self.env.vars['x'][0], 20)
+        x_value, x_type = self.env.global_scope.get('x')
+        self.assertEqual(x_value, 20)
     
     def test_type_conversions(self):
         """Test built-in type conversion functions"""
@@ -90,7 +96,8 @@ class TestMyLang(unittest.TestCase):
         ast = parser.parse()
         self.env.evaluate(ast)
         
-        self.assertEqual(self.env.vars['converted'][0], 42)
+        converted_value, converted_type = self.env.global_scope.get('converted')
+        self.assertEqual(converted_value, 42)
 
 
 if __name__ == '__main__':

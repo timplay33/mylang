@@ -86,9 +86,9 @@ class AbsFunction(BuiltinFunction):
 
 def create_extended_environment():
     """Create an environment with extended built-in functions"""
-    from mylang import Environment
+    from mylang import Evaluator
     
-    env = Environment()
+    env = Evaluator()
     
     # Register our extended functions
     extended_functions = [
@@ -99,7 +99,7 @@ def create_extended_environment():
     ]
     
     for func in extended_functions:
-        env.evaluator.builtins.register(func)
+        env.builtins.register(func)
         print(f"✓ Registered function: {func.name()}")
     
     return env
@@ -133,54 +133,15 @@ def demo_extended_functions():
     print("Digits in 12345:", num_digits);
     '''
 
-    print("Executing extended functions test...")
+    print("Testing extended functions:")
+    print("Code:")
+    print(test_code)
+    print("\nOutput:")
     print("-" * 40)
     
     try:
         from mylang import tokenize, Parser
         
-        tokens = tokenize(test_code)
-        parser = Parser(tokens)
-        ast = parser.parse()
-        env.evaluate(ast)
-
-        print("-" * 40)
-        print("✓ All extended functions work correctly!")
-
-    except Exception as e:
-        print(f"✗ Error: {e}")
-
-
-if __name__ == "__main__":
-    demo_extended_functions()
-
-    test_code = '''
-    string text = "Hello World";
-    int text_length = len(text);
-    print("Length of text:", text_length);
-    
-    int a = 10;
-    int b = 20;
-    int c = 5;
-    
-    int maximum = max(a, b, c);
-    int minimum = min(a, b, c);
-    int absolute = abs(-15);
-    
-    print("Max:", maximum);
-    print("Min:", minimum);
-    print("Abs(-15):", absolute);
-    
-    int num_digits = len(12345);
-    print("Digits in 12345:", num_digits);
-    '''
-
-    print("Testing extended functions:")
-    print("Code:")
-    print(test_code)
-    print("\nOutput:")
-
-    try:
         tokens = tokenize(test_code)
         parser = Parser(tokens)
         ast = parser.parse()
