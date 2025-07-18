@@ -12,35 +12,35 @@ class Scope:
         self.parent = parent
         self.variables: Dict[str, tuple] = {}  # name -> (value, type)
 
-    def define(self, name: str, value: Any, type_name: str):
+    def define(self, name: str, value: Any, type_name: str, location: Optional[SourceLocation] = None):
         """Define a new variable in this scope"""
         if name in self.variables:
             raise EvaluationError(
-                f"Variable '{name}' already defined in this scope")
+                f"Variable '{name}' already defined in this scope", location)
         self.variables[name] = (value, type_name)
 
-    def get(self, name: str) -> tuple:
+    def get(self, name: str, location: Optional[SourceLocation] = None) -> tuple:
         """Get a variable from this scope or parent scopes"""
         if name in self.variables:
             return self.variables[name]
         if self.parent:
-            return self.parent.get(name)
-        raise UndefinedVariableError(f"Undefined variable: {name}")
+            return self.parent.get(name, location)
+        raise UndefinedVariableError(f"Undefined variable: {name}", location)
 
-    def set(self, name: str, value: Any):
+    def set(self, name: str, value: Any, location: Optional[SourceLocation] = None):
         """Set a variable in this scope or parent scopes"""
         if name in self.variables:
             old_value, type_name = self.variables[name]
             self.variables[name] = (value, type_name)
             return
         if self.parent:
-            self.parent.set(name, value)
+            self.parent.set(name, value, location)
             return
-        raise UndefinedVariableError(f"Undefined variable: {name}")
+        raise UndefinedVariableError(f"Undefined variable: {name}", location)
 
-    def get_type(self, name: str) -> str:
+    def get_type(self, name: str, location: Optional[SourceLocation] = None) -> str:
         """Get the type of a variable"""
-        _, type_name = self.get(name)
+        _, type_name = self.get(name, location)
         return type_name
 
 
@@ -120,7 +120,7 @@ class Evaluator:
         method_name = f'evaluate_{type(node).__name__}'
         method = getattr(self, method_name, None)
         if method is None:
-            raise EvaluationError(f"No evaluator for {type(node).__name__}")
+            raise EvaluationError(f"No evaluator for {type(node).__name__}", getattr(node, 'location', None))
         return method(node)
 
     def _token_to_operator(self, token_type: TokenType) -> str:
@@ -157,11 +157,18 @@ class Evaluator:
 
     def evaluate_Literal(self, node: Literal) -> Any:
         """Evaluate a literal value"""
+        # Use type hint for type safety validation
+        if node.type_hint:
+            try:
+                converted_value = self.type_system.convert_to_type(node.value, node.type_hint)
+                return converted_value
+            except TypeMismatchError as e:
+                raise TypeMismatchError(f"Literal type mismatch: {e}", node.location)
         return node.value
 
     def evaluate_Variable(self, node: Variable) -> Any:
         """Evaluate a variable reference"""
-        value, _ = self.current_scope.get(node.name)
+        value, _ = self.current_scope.get(node.name, node.location)
         return value
 
     def evaluate_BinaryOp(self, node: BinaryOp) -> Any:
@@ -175,24 +182,24 @@ class Evaluator:
             if op == '+':
                 if not self.type_system.check_binary_op(left, right, op):
                     raise TypeMismatchError(
-                        f"Type mismatch for '+': {type(left).__name__} and {type(right).__name__}")
+                        f"Type mismatch for '+': {type(left).__name__} and {type(right).__name__}", node.location)
                 return left + right
             elif op == '-':
                 if not self.type_system.check_binary_op(left, right, op):
                     raise TypeMismatchError(
-                        f"Type mismatch for '-': {type(left).__name__} and {type(right).__name__}")
+                        f"Type mismatch for '-': {type(left).__name__} and {type(right).__name__}", node.location)
                 return left - right
             elif op == '*':
                 if not self.type_system.check_binary_op(left, right, op):
                     raise TypeMismatchError(
-                        f"Type mismatch for '*': {type(left).__name__} and {type(right).__name__}")
+                        f"Type mismatch for '*': {type(left).__name__} and {type(right).__name__}", node.location)
                 return left * right
             elif op == '/':
                 if not self.type_system.check_binary_op(left, right, op):
                     raise TypeMismatchError(
-                        f"Type mismatch for '/': {type(left).__name__} and {type(right).__name__}")
+                        f"Type mismatch for '/': {type(left).__name__} and {type(right).__name__}", node.location)
                 if right == 0:
-                    raise EvaluationError("division by zero")
+                    raise EvaluationError("Division by zero", node.location)
                 return left // right if isinstance(left, int) and isinstance(right, int) else float(left) / float(right)
 
         # Logical and comparison operators
@@ -209,7 +216,7 @@ class Evaluator:
             }
             return operations[op](left, right)
 
-        raise EvaluationError(f"Unknown binary operator: {op}")  # Changed to show converted op
+        raise EvaluationError(f"Unknown binary operator: {op}", node.location)
 
     def evaluate_UnaryOp(self, node: UnaryOp) -> Any:
         """Evaluate a unary operation"""
@@ -221,10 +228,10 @@ class Evaluator:
         elif op == '-':
             if not isinstance(operand, (int, float)):
                 raise TypeMismatchError(
-                    f"Unsupported operand type for unary '-': {type(operand).__name__}")
+                    f"Unsupported operand type for unary '-': {type(operand).__name__}", node.location)
             return -operand
 
-        raise EvaluationError(f"Unknown unary operator: {op}")
+        raise EvaluationError(f"Unknown unary operator: {op}", node.location)
 
     def evaluate_FunctionCall(self, node: FunctionCall) -> Any:
         """Evaluate a function call"""
@@ -240,12 +247,12 @@ class Evaluator:
             func_params, func_body, func_ret_type = self.functions[func_name]
             if len(args) != len(func_params):
                 raise EvaluationError(
-                    f"{func_name}() expects {len(func_params)} args, got {len(args)}")
+                    f"{func_name}() expects {len(func_params)} args, got {len(args)}", node.location)
 
             # Create new scope for function execution
             return self.with_new_scope(lambda: self._execute_function(func_params, func_body, func_ret_type, args))()
 
-        raise UndefinedFunctionError(f"Unknown function: {func_name}")
+        raise UndefinedFunctionError(f"Unknown function: {func_name}", node.location)
 
     def _token_to_type_string(self, token_type: TokenType) -> str:
         """Convert TokenType to type string"""
@@ -264,17 +271,26 @@ class Evaluator:
         type_name = self._token_to_type_string(node.type_name) if isinstance(node.type_name, TokenType) else node.type_name
 
         if value is not None:
-            value = self.type_system.convert_to_type(value, type_name)
+            try:
+                value = self.type_system.convert_to_type(value, type_name)
+            except TypeMismatchError as e:
+                raise TypeMismatchError(f"Cannot initialize variable '{node.var_name}': {e}", node.location)
 
-        self.current_scope.define(node.var_name, value, type_name)
+        self.current_scope.define(node.var_name, value, type_name, node.location)
         return value
 
     def evaluate_Assignment(self, node: Assignment) -> Any:
         """Evaluate a variable assignment"""
         value = self.evaluate(node.value)
-        type_name = self.current_scope.get_type(node.var_name)
-        value = self.type_system.convert_to_type(value, type_name)
-        self.current_scope.set(node.var_name, value)
+        try:
+            type_name = self.current_scope.get_type(node.var_name, node.location)
+            value = self.type_system.convert_to_type(value, type_name)
+        except UndefinedVariableError:
+            raise UndefinedVariableError(f"Cannot assign to undefined variable '{node.var_name}'", node.location)
+        except TypeMismatchError as e:
+            raise TypeMismatchError(f"Cannot assign to variable '{node.var_name}': {e}", node.location)
+            
+        self.current_scope.set(node.var_name, value, node.location)
         return value
 
     def evaluate_IfStatement(self, node: IfStatement) -> Any:

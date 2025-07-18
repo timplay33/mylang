@@ -11,7 +11,10 @@ import os
 # Add src to path so we can import mylang
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-from mylang import tokenize, Parser, Evaluator, LanguageError
+from mylang.lexer import tokenize
+from mylang.parser import Parser
+from mylang.evaluator import Evaluator
+from mylang.error import LanguageError
 
 def run(code, env, filename=None):
     """Execute MyLang code with improved error handling"""
@@ -20,7 +23,7 @@ def run(code, env, filename=None):
 
     try:
         # Tokenize
-        tokens = tokenize(code)
+        tokens = tokenize(code, filename)
 
         # Parse
         parser = Parser(tokens)

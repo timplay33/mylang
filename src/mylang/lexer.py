@@ -1,9 +1,21 @@
 import re
 from .tokens import TokenType
+from .error import SourceLocation
+from typing import List, Tuple, Any, Optional
 
 # === Lexer ===
 
-def tokenize(code):
+class Token:
+    """Token with source location information"""
+    def __init__(self, token_type: TokenType, value: Any, location: SourceLocation):
+        self.type = token_type
+        self.value = value
+        self.location = location
+    
+    def __repr__(self):
+        return f"Token({self.type}, {self.value!r}, {self.location})"
+
+def tokenize(code: str, filename: Optional[str] = None) -> List[Token]:
     token_specification = [
         # Comments (must come before other operators)
         (TokenType.COMMENT_LINE,  r'//.*'),           # Line comment
@@ -62,27 +74,49 @@ def tokenize(code):
         (TokenType.COMMA,        r','),
         (TokenType.SEMICOLON,    r';'),
         (TokenType.SKIP,         r'[ \t]+'),       # Skip spaces
+        (TokenType.NEWLINE,      r'\n'),           # Newlines for position tracking
     ]
     
     tok_regex = '|'.join(
         f'(?P<{token_type.name}>{regex})' for token_type, regex in token_specification)
     tokens = []
+    
+    line = 1
+    line_start = 0
+    
     for mo in re.finditer(tok_regex, code):
         kind_name = mo.lastgroup
         value = mo.group()
+        start_pos = mo.start()
+        
+        if kind_name is None:
+            continue
+            
         kind = TokenType[kind_name]
+        
+        # Handle newlines for position tracking
+        if kind == TokenType.NEWLINE:
+            line += 1
+            line_start = mo.end()
+            continue  # Don't include newlines in token stream
+        
+        # Calculate line and column
+        column = start_pos - line_start + 1
+        location = SourceLocation(line, column, filename)
         
         if kind == TokenType.NUMBER:
             num = float(value) if '.' in value else int(value)
-            tokens.append((kind, num))
+            tokens.append(Token(kind, num, location))
         elif kind == TokenType.STRING:
-            tokens.append((kind, value[1:-1]))
+            tokens.append(Token(kind, value[1:-1], location))
         elif kind == TokenType.BOOLEAN:
-            tokens.append((kind, value == 'true'))
+            tokens.append(Token(kind, value == 'true', location))
         elif kind in (TokenType.COMMENT_LINE, TokenType.COMMENT_BLOCK, TokenType.SKIP):
             continue
         else:
-            tokens.append((kind, value))
+            tokens.append(Token(kind, value, location))
     
-    tokens.append((TokenType.EOF, None))
+    # Add EOF token at the end of the file
+    final_location = SourceLocation(line, len(code) - line_start + 1 if tokens else 1, filename)
+    tokens.append(Token(TokenType.EOF, None, final_location))
     return tokens
